@@ -4,6 +4,8 @@ import { books } from "@/database/schema";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { config } from "dotenv";
+import fs from "fs";
+import path from "path";
 
 config({ path: ".env" });
 
@@ -22,12 +24,21 @@ const uploadToImageKit = async (
   folder: string
 ) => {
   try {
+    let fileToUpload: string | Buffer = url;
+    // If url is a local file path, read as base64
+    if (!/^https?:\/\//.test(url)) {
+      // Remove leading './' or '/' and resolve relative to project root
+      let localPath = url.startsWith("./") ? url.slice(2) : url;
+      if (localPath.startsWith("/")) localPath = localPath.slice(1);
+      const absPath = path.resolve(process.cwd(), localPath);
+      const fileBuffer = fs.readFileSync(absPath);
+      fileToUpload = fileBuffer.toString("base64");
+    }
     const response = await imagekit.upload({
-      file: url,
+      file: fileToUpload,
       fileName,
       folder,
     });
-
     return response.filePath;
   } catch (error) {
     console.error("Error uploading image to ImageKit:", error);
@@ -39,22 +50,10 @@ const seed = async () => {
 
   try {
     for (const book of dummyBooks) {
-      const coverUrl = (await uploadToImageKit(
-        book.coverUrl,
-        `${book.title}.jpg`,
-        "/books/covers"
-      )) as string;
-
-      const videoUrl = (await uploadToImageKit(
-        book.videoUrl,
-        `${book.title}.mp4`,
-        "/books/videos"
-      )) as string;
-
       await db.insert(books).values({
         ...book,
-        coverUrl,
-        videoUrl,
+        coverUrl: book.coverUrl,
+        videoUrl: book.videoUrl,
       });
     }
 

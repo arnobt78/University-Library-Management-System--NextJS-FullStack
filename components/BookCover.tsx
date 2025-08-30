@@ -34,7 +34,7 @@ const BookCover = ({
       className={cn(
         "relative transition-all duration-300",
         variantStyles[variant],
-        className,
+        className
       )}
     >
       <BookCoverSvg coverColor={coverColor} />
@@ -44,7 +44,7 @@ const BookCover = ({
         style={{ left: "12%", width: "87.5%", height: "88%" }}
       >
         <IKImage
-          path={coverImage}
+          src={coverImage}
           urlEndpoint={config.env.imagekit.urlEndpoint}
           alt="Book cover"
           fill
