@@ -1,9 +1,4 @@
-<div align="center">
-  <br />
-    <a href="https://youtu.be/EZajJGOMWas" target="_blank">
-      <img src="https://github.com/user-attachments/assets/7cff0964-6c02-4af5-aa0c-964b349cc9aa" alt="Project Banner">
-    </a>
-  <br />
+
 
   <div>
     <img src="https://img.shields.io/badge/-Next_JS-black?style=for-the-badge&logoColor=white&logo=nextdotjs&color=000000" alt="next.js" />
@@ -13,7 +8,7 @@
     <img src="https://img.shields.io/badge/-Tailwind_CSS-black?style=for-the-badge&logoColor=white&logo=tailwindcss&color=06B6D4" alt="tailwindcss" />
   </div>
 
-  <h3 align="center">A University Library Management System with Admin Panel</h3>
+  <h3 align="center">A University Library Management System with Admin Panel (Currently under developing right now, soon its coming with its all feature functional</h3>
 
    <div align="center">
      Build this project step by step with our detailed tutorial on <a href="https://www.youtube.com/@javascriptmastery/videos" target="_blank"><b>JavaScript Mastery</b></a> YouTube. Join the JSM family!
@@ -1300,6 +1295,3 @@ seed();
 Enjoyed creating this project? Dive deeper into our PRO courses for a richer learning adventure. They're packed with
 detailed explanations, cool features, and exercises to boost your skills. Give it a go!
 
-<a href="https://jsmastery.pro/next15" target="_blank">
-   <img src="https://github.com/user-attachments/assets/b8760e69-1f81-4a71-9108-ceeb1de36741" alt="Project Banner">
-</a>
