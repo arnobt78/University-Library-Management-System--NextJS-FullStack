@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { adminSideBarLinks } from "@/constants";
 import Link from "next/link";
 import { cn, getInitials } from "@/lib/utils";
@@ -15,12 +14,7 @@ const Sidebar = ({ session }: { session: Session }) => {
     <div className="admin-sidebar">
       <div>
         <div className="logo">
-          <Image
-            src="/icons/admin/logo.svg"
-            alt="logo"
-            height={37}
-            width={37}
-          />
+          <img src="/icons/admin/logo.svg" alt="logo" height={37} width={37} />
           <h1>BookWise</h1>
         </div>
 
@@ -37,15 +31,15 @@ const Sidebar = ({ session }: { session: Session }) => {
                 <div
                   className={cn(
                     "link",
-                    isSelected && "bg-primary-admin shadow-sm",
+                    isSelected && "bg-primary-admin shadow-sm"
                   )}
                 >
                   <div className="relative size-5">
-                    <Image
+                    <img
                       src={link.img}
                       alt="icon"
-                      fill
                       className={`${isSelected ? "brightness-0 invert" : ""}  object-contain`}
+                      style={{ width: "100%", height: "100%" }} // Assuming fill means it should take full size
                     />
                   </div>
 

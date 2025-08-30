@@ -26,6 +26,8 @@ const eslintConfig = [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^(users|useState)$" },
       ],
+      // Ignore <img> element warning from next/next/no-img-element
+      "@next/next/no-img-element": "off",
     },
   },
 ];

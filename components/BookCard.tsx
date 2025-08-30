@@ -32,7 +32,7 @@ const BookCard = ({
       {isLoanedBook && (
         <div className="mt-3 w-full">
           <div className="book-loaned">
-            <Image
+            <img
               src="/icons/calendar.svg"
               alt="calendar"
               width={18}

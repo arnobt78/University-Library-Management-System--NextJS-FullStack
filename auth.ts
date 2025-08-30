@@ -1,9 +1,16 @@
 import NextAuth, { User } from "next-auth";
-import { compare } from "bcryptjs";
+import { sha256 } from "@noble/hashes/sha256";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/database/drizzle";
 import { users } from "@/database/schema";
 import { eq } from "drizzle-orm";
+
+function concatUint8Arrays(a: Uint8Array, b: Uint8Array): Uint8Array {
+  const c = new Uint8Array(a.length + b.length);
+  c.set(a, 0);
+  c.set(b, a.length);
+  return c;
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
@@ -24,10 +31,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (user.length === 0) return null;
 
-        const isPasswordValid = await compare(
-          credentials.password.toString(),
-          user[0].password,
+        // Extract salt and hash from stored password
+        const [saltB64, hashB64] = user[0].password.split(":");
+        const salt = Uint8Array.from(Buffer.from(saltB64, "base64"));
+        const expectedHash = Buffer.from(hashB64, "base64");
+        // Hash the provided password with the stored salt
+        const passwordBytes = new TextEncoder().encode(
+          credentials.password.toString()
         );
+        const hashBuffer = sha256(concatUint8Arrays(passwordBytes, salt));
+        const isPasswordValid = Buffer.from(hashBuffer).equals(expectedHash);
 
         if (!isPasswordValid) return null;
 

@@ -1,5 +1,5 @@
 import React from "react";
-import Image from "next/image";
+// import Image from "next/image";
 import BookCover from "@/components/BookCover";
 import BorrowBook from "@/components/BorrowBook";
 import { db } from "@/database/drizzle";
@@ -51,7 +51,7 @@ const BookOverview = async ({
           </p>
 
           <div className="flex flex-row gap-1">
-            <Image src="/icons/star.svg" alt="star" width={22} height={22} />
+            <img src="/icons/star.svg" alt="star" width={22} height={22} />
             <p>{rating}</p>
           </div>
         </div>

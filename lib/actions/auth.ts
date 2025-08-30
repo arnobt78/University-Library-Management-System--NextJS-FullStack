@@ -3,7 +3,16 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/database/drizzle";
 import { users } from "@/database/schema";
-import { hash } from "bcryptjs";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { sha256 } from "@noble/hashes/sha256";
+import { randomBytes } from "@noble/hashes/utils";
+
+function concatUint8Arrays(a: Uint8Array, b: Uint8Array): Uint8Array {
+  const c = new Uint8Array(a.length + b.length);
+  c.set(a, 0);
+  c.set(b, a.length);
+  return c;
+}
 import { signIn } from "@/auth";
 import { headers } from "next/headers";
 import ratelimit from "@/lib/ratelimit";
@@ -12,7 +21,7 @@ import { workflowClient } from "@/lib/workflow";
 import config from "@/lib/config";
 
 export const signInWithCredentials = async (
-  params: Pick<AuthCredentials, "email" | "password">,
+  params: Pick<AuthCredentials, "email" | "password">
 ) => {
   const { email, password } = params;
 
@@ -57,7 +66,13 @@ export const signUp = async (params: AuthCredentials) => {
     return { success: false, error: "User already exists" };
   }
 
-  const hashedPassword = await hash(password, 10);
+  // Generate a random salt
+  const salt = randomBytes(16);
+  // Hash the password with the salt
+  const passwordBytes = new TextEncoder().encode(password);
+  const hashBuffer = sha256(concatUint8Arrays(passwordBytes, salt));
+  // Store salt and hash as base64
+  const hashedPassword = `${Buffer.from(salt).toString("base64")}:${Buffer.from(hashBuffer).toString("base64")}`;
 
   try {
     await db.insert(users).values({
