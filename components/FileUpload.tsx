@@ -15,7 +15,7 @@ const {
 
 const authenticator = async () => {
   try {
-    const response = await fetch(`${config.env.apiEndpoint}/api/auth/imagekit`);
+    const response = await fetch("/api/auth/imagekit");
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -95,9 +95,9 @@ const FileUpload = ({
     onFileChange(res.filePath);
 
     toast({
-      title: `${type} uploaded successfully`,
+      title: `✅ ${type === "image" ? "Image" : "Video"} Uploaded Successfully!`,
       // @ts-expect-error: imagekitio-next types are not exported, but res has filePath
-      description: `${res.filePath} uploaded successfully!`,
+      description: `${res.filePath} has been uploaded and is ready to use.`,
     });
   };
 
@@ -105,8 +105,9 @@ const FileUpload = ({
     if (type === "image") {
       if (file.size > 20 * 1024 * 1024) {
         toast({
-          title: "File size too large",
-          description: "Please upload a file that is less than 20MB in size",
+          title: "📁 File Too Large",
+          description:
+            "Image files must be smaller than 20MB. Please compress your image and try again.",
           variant: "destructive",
         });
 
@@ -115,8 +116,9 @@ const FileUpload = ({
     } else if (type === "video") {
       if (file.size > 50 * 1024 * 1024) {
         toast({
-          title: "File size too large",
-          description: "Please upload a file that is less than 50MB in size",
+          title: "📁 File Too Large",
+          description:
+            "Video files must be smaller than 50MB. Please compress your video and try again.",
           variant: "destructive",
         });
         return false;
@@ -184,18 +186,38 @@ const FileUpload = ({
 
       {file &&
         (type === "image" ? (
-          <IKImage
-            alt={file.filePath ?? ""}
-            path={file.filePath ?? ""}
-            width={500}
-            height={300}
-          />
+          // Check if filePath is already a full URL
+          file.filePath?.startsWith("http") ? (
+            <img
+              src={file.filePath}
+              alt="Uploaded image"
+              width={500}
+              height={300}
+              className="rounded-xl"
+            />
+          ) : (
+            <IKImage
+              alt={file.filePath ?? ""}
+              path={file.filePath ?? ""}
+              width={500}
+              height={300}
+            />
+          )
         ) : type === "video" ? (
-          <IKVideo
-            path={file.filePath ?? ""}
-            controls={true}
-            className="h-96 w-full rounded-xl"
-          />
+          // Check if filePath is already a full URL
+          file.filePath?.startsWith("http") ? (
+            <video
+              src={file.filePath}
+              controls={true}
+              className="h-96 w-full rounded-xl"
+            />
+          ) : (
+            <IKVideo
+              path={file.filePath ?? ""}
+              controls={true}
+              className="h-96 w-full rounded-xl"
+            />
+          )
         ) : null)}
     </ImageKitProvider>
   );

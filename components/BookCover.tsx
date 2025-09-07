@@ -26,8 +26,8 @@ interface Props {
 const BookCover = ({
   className,
   variant = "regular",
-  coverColor = "#012B48",
-  coverImage = "https://placehold.co/400x600.png",
+  coverColor,
+  coverImage,
 }: Props) => {
   return (
     <div
@@ -49,7 +49,6 @@ const BookCover = ({
           alt="Book cover"
           fill
           className="rounded-sm object-fill"
-          loading="lazy"
           lqip={{ active: true }}
         />
       </div>

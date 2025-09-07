@@ -22,6 +22,16 @@ interface Book {
   coverUrl: string;
   videoUrl: string;
   summary: string;
+  // Enhanced tracking and control fields
+  isbn?: string | null;
+  publicationYear?: number | null;
+  publisher?: string | null;
+  language?: string | null;
+  pageCount?: number | null;
+  edition?: string | null;
+  isActive: boolean;
+  updatedAt: Date | null;
+  updatedBy?: string | null;
   createdAt: Date | null;
 }
 
@@ -44,9 +54,37 @@ interface BookParams {
   totalCopies: number;
   videoUrl: string;
   summary: string;
+  // Enhanced optional fields
+  isbn?: string;
+  publicationYear?: number;
+  publisher?: string;
+  language?: string;
+  pageCount?: number;
+  edition?: string;
+  isActive?: boolean;
 }
 
 interface BorrowBookParams {
   bookId: string;
   userId: string;
+}
+
+interface BorrowRecord {
+  id: string;
+  userId: string;
+  bookId: string;
+  borrowDate: Date;
+  dueDate: Date;
+  returnDate?: Date | null;
+  status: "BORROWED" | "RETURNED";
+  // Enhanced tracking and control fields
+  borrowedBy?: string | null;
+  returnedBy?: string | null;
+  fineAmount: number;
+  notes?: string | null;
+  renewalCount: number;
+  lastReminderSent?: Date | null;
+  updatedAt: Date | null;
+  updatedBy?: string | null;
+  createdAt: Date | null;
 }

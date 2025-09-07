@@ -27,10 +27,11 @@ const BorrowBook = ({
   const handleBorrowBook = async () => {
     if (!isEligible) {
       toast({
-        title: "Error",
+        title: "⚠️ Cannot Borrow Book",
         description: message,
         variant: "destructive",
       });
+      return; // Add return to prevent further execution
     }
 
     setBorrowing(true);
@@ -40,22 +41,26 @@ const BorrowBook = ({
 
       if (result.success) {
         toast({
-          title: "Success",
-          description: "Book borrowed successfully",
+          title: "📚 Book Borrowed Successfully!",
+          description:
+            "Your book has been added to your borrowed collection. Enjoy reading!",
         });
 
         router.push("/");
       } else {
         toast({
-          title: "Error",
-          description: result.error,
+          title: "❌ Borrowing Failed",
+          description:
+            result.error ||
+            "Unable to borrow the book at this time. Please try again later.",
           variant: "destructive",
         });
       }
     } catch {
       toast({
-        title: "Error",
-        description: "An error occurred while borrowing the book",
+        title: "❌ Network Error",
+        description:
+          "Unable to connect to the server. Please check your internet connection and try again.",
         variant: "destructive",
       });
     } finally {

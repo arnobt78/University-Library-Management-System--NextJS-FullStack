@@ -15,11 +15,11 @@ const Layout = async ({ children }: { children: ReactNode }) => {
   if (!session?.user?.id) redirect("/sign-in");
 
   const isAdmin = await db
-    .select({ isAdmin: users.role })
+    .select({ role: users.role })
     .from(users)
     .where(eq(users.id, session.user.id))
     .limit(1)
-    .then((res) => res[0]?.isAdmin === "ADMIN");
+    .then((res) => res[0]?.role === "ADMIN");
 
   if (!isAdmin) redirect("/");
 

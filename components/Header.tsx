@@ -1,13 +1,28 @@
 import Link from "next/link";
-// import Image from "next/image";
-import { signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { Session } from "next-auth";
+import { logoutAction } from "@/lib/actions/logout";
+import { db } from "@/database/drizzle";
+import { users } from "@/database/schema";
+import { eq } from "drizzle-orm";
 
 interface HeaderProps {
   session: Session;
 }
 
-const Header = ({ session }: HeaderProps) => {
+const Header = async ({ session }: HeaderProps) => {
+  // Check if user is admin
+  const userRole = session?.user?.id
+    ? await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, session.user.id))
+        .limit(1)
+        .then((res) => res[0]?.role)
+    : null;
+
+  const isAdmin = userRole === "ADMIN";
+
   return (
     <header className="my-10 flex justify-between">
       <Link href="/">
@@ -19,31 +34,47 @@ const Header = ({ session }: HeaderProps) => {
           <Link href="/">Home</Link>
         </li>
         <li>
-          <Link href="/books/1">Book Details</Link>
-        </li>
-        <li>
           <Link href="/my-profile">My Profile</Link>
         </li>
-        <li>
-          <Link href="/admin">Admin Dashboard</Link>
-        </li>
-        <li>
-          <Link href="/admin/books">Admin Books</Link>
-        </li>
-        <li>
-          <Link href="/admin/books/new">Add New Book</Link>
-        </li>
+
+        {/* Admin-only navigation items */}
+        {isAdmin ? (
+          <>
+            <li>
+              <Link href="/admin">Admin Dashboard</Link>
+            </li>
+            <li>
+              <Link href="/admin/users">Users</Link>
+            </li>
+            <li>
+              <Link href="/admin/books">Books</Link>
+            </li>
+            <li>
+              <Link href="/admin/book-requests">Borrow Requests</Link>
+            </li>
+            <li>
+              <Link href="/admin/account-requests">Account Requests</Link>
+            </li>
+          </>
+        ) : (
+          <li>
+            <Link
+              href="/make-admin"
+              className="text-purple-300 hover:text-purple-200"
+            >
+              Become Admin
+            </Link>
+          </li>
+        )}
+
+        {/* User email */}
         {session?.user?.email && (
           <li className="font-bold text-light-100">{session.user.email}</li>
         )}
+
+        {/* Logout button */}
         <li>
-          <form
-            action={async () => {
-              "use server";
-              await signOut();
-            }}
-            className="mb-0"
-          >
+          <form action={logoutAction} className="mb-0">
             <Button>Logout</Button>
           </form>
         </li>

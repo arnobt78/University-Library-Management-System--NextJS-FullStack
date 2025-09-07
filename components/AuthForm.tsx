@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { FIELD_NAMES, FIELD_TYPES } from "@/constants";
 import FileUpload from "@/components/FileUpload";
-import { toast } from "@/hooks/use-toast";
+import { showToast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 
 interface Props<T extends FieldValues> {
@@ -53,20 +53,17 @@ const AuthForm = <T extends FieldValues>({
     const result = await onSubmit(data);
 
     if (result.success) {
-      toast({
-        title: "Success",
-        description: isSignIn
-          ? "You have successfully signed in."
-          : "You have successfully signed up.",
-      });
-
+      if (isSignIn) {
+        showToast.auth.signInSuccess();
+      } else {
+        showToast.auth.signUpSuccess();
+      }
       router.push("/");
     } else {
-      toast({
-        title: `Error ${isSignIn ? "signing in" : "signing up"}`,
-        description: result.error ?? "An error occurred.",
-        variant: "destructive",
-      });
+      showToast.error(
+        "Authentication Error",
+        result.error ?? "An unexpected error occurred. Please try again."
+      );
     }
   };
 

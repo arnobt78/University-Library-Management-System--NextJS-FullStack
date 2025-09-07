@@ -1,3 +1,5 @@
+"use client";
+
 import { HexColorInput, HexColorPicker } from "react-colorful";
 import { useState } from "react";
 
