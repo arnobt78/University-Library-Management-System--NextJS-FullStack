@@ -18,7 +18,7 @@ const BookVideo = ({ videoUrl }: { videoUrl: string }) => {
   // If it's not a video file, show a placeholder
   if (!isVideoFile) {
     return (
-      <div className="w-full h-64 bg-gray-100 rounded-xl flex items-center justify-center">
+      <div className="flex h-64 w-full items-center justify-center rounded-xl bg-gray-100">
         <p className="text-gray-500">No video available</p>
       </div>
     );
