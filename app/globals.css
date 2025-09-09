@@ -94,15 +94,15 @@
   }
 
   .book-overview h1 {
-    @apply text-5xl font-semibold text-white md:text-7xl;
+    @apply text-4xl font-semibold text-white sm:text-6xl;
   }
 
   .book-info {
-    @apply mt-7 flex flex-row flex-wrap gap-4 text-xl text-light-100;
+    @apply flex flex-row flex-wrap gap-4 text-xl text-light-100;
   }
 
   .book-copies {
-    @apply flex flex-row flex-wrap gap-4 mt-1;
+    @apply flex flex-row flex-wrap gap-4;
   }
 
   .book-copies p {
@@ -262,7 +262,7 @@
 
   /* Book Details */
   .book-details {
-    @apply lg:mt-36 mt-16 mb-20 flex flex-col gap-16 lg:flex-row;
+    @apply py-16 flex flex-col gap-16 lg:flex-row;
   }
 
   .book-details h3 {

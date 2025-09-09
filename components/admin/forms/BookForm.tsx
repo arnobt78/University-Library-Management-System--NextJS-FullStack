@@ -22,6 +22,7 @@ import ColorPicker from "@/components/admin/ColorPicker";
 import { createBook } from "@/lib/admin/actions/book";
 import { updateBook } from "@/lib/admin/actions/book";
 import { showToast } from "@/lib/toast";
+import { useSession } from "next-auth/react";
 
 interface Props extends Partial<Book> {
   type?: "create" | "update";
@@ -29,6 +30,7 @@ interface Props extends Partial<Book> {
 
 const BookForm = ({ type = "create", ...book }: Props) => {
   const router = useRouter();
+  const { data: session } = useSession();
 
   const form = useForm<z.infer<typeof bookSchema>>({
     resolver: zodResolver(bookSchema),
@@ -43,12 +45,22 @@ const BookForm = ({ type = "create", ...book }: Props) => {
       coverColor: book.coverColor || "",
       videoUrl: book.videoUrl || "",
       summary: book.summary || "",
+      // Enhanced fields
+      isbn: book.isbn || "",
+      publicationYear: book.publicationYear || undefined,
+      publisher: book.publisher || "",
+      language: book.language || "English",
+      pageCount: book.pageCount || undefined,
+      edition: book.edition || "",
+      isActive: book.isActive ?? true,
     },
   });
 
   const onSubmit = async (values: z.infer<typeof bookSchema>) => {
+    const updatedBy = session?.user?.id || undefined;
+
     if (type === "create") {
-      const result = await createBook(values);
+      const result = await createBook({ ...values, updatedBy });
 
       if (result.success) {
         showToast.book.createSuccess(values.title);
@@ -61,7 +73,7 @@ const BookForm = ({ type = "create", ...book }: Props) => {
         );
       }
     } else {
-      const result = await updateBook(book.id!, values);
+      const result = await updateBook(book.id!, { ...values, updatedBy });
 
       if (result.success) {
         showToast.success(
@@ -296,6 +308,161 @@ const BookForm = ({ type = "create", ...book }: Props) => {
             </FormItem>
           )}
         />
+
+        {/* Enhanced Fields Section */}
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="mb-4 text-lg font-semibold text-dark-500">
+            Additional Information (Optional)
+          </h3>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name={"isbn"}
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-1">
+                  <FormLabel className="text-base font-normal text-dark-500">
+                    ISBN
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="978-0-123456-78-9"
+                      {...field}
+                      className="book-form_input"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={"publicationYear"}
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-1">
+                  <FormLabel className="text-base font-normal text-dark-500">
+                    Publication Year
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1000}
+                      max={new Date().getFullYear()}
+                      placeholder="2023"
+                      {...field}
+                      className="book-form_input"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={"publisher"}
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-1">
+                  <FormLabel className="text-base font-normal text-dark-500">
+                    Publisher
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Publisher name"
+                      {...field}
+                      className="book-form_input"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={"language"}
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-1">
+                  <FormLabel className="text-base font-normal text-dark-500">
+                    Language
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="English"
+                      {...field}
+                      className="book-form_input"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={"pageCount"}
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-1">
+                  <FormLabel className="text-base font-normal text-dark-500">
+                    Page Count
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="300"
+                      {...field}
+                      className="book-form_input"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={"edition"}
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-1">
+                  <FormLabel className="text-base font-normal text-dark-500">
+                    Edition
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="1st Edition"
+                      {...field}
+                      className="book-form_input"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name={"isActive"}
+            render={({ field }) => (
+              <FormItem className="mt-4 flex flex-row items-center space-x-3 space-y-0">
+                <FormControl>
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={field.onChange}
+                    className="size-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </FormControl>
+                <FormLabel className="text-base font-normal text-dark-500">
+                  Book is active and available for borrowing
+                </FormLabel>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type="submit" className="book-form_btn text-white">
           {type === "create" ? "Add Book to Library" : "Update Book"}

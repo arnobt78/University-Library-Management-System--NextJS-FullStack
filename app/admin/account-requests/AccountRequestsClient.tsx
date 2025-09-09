@@ -233,8 +233,8 @@ const AccountRequestCard = ({
                     alt="University Card"
                     className="h-32 w-full rounded-lg border border-gray-200 object-cover transition-colors hover:border-blue-300"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-0 transition-all duration-200 group-hover:bg-opacity-20">
-                    <div className="rounded-full bg-white bg-opacity-90 p-2 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-all duration-200 group-hover:bg-black/20">
+                    <div className="rounded-full bg-white/90 p-2 opacity-0 transition-opacity group-hover:opacity-100">
                       <Eye className="size-4 text-gray-700" />
                     </div>
                   </div>

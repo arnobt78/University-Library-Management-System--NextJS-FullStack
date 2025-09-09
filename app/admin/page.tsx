@@ -35,6 +35,17 @@ const Page = async ({
   );
   const borrowedCopies = totalCopies - availableCopies;
 
+  // Enhanced book statistics
+  const activeBooks = allBooks.filter((book) => book.isActive).length;
+  const inactiveBooks = allBooks.filter((book) => !book.isActive).length;
+  const booksWithISBN = allBooks.filter((book) => book.isbn).length;
+  const booksWithPublisher = allBooks.filter((book) => book.publisher).length;
+  const averagePageCount =
+    allBooks
+      .filter((book) => book.pageCount)
+      .reduce((sum, book) => sum + (book.pageCount || 0), 0) /
+      allBooks.filter((book) => book.pageCount).length || 0;
+
   const activeBorrows = borrowRequests.filter(
     (r) => r.status === "BORROWED"
   ).length;
@@ -80,7 +91,7 @@ const Page = async ({
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="stat">
           <div className="stat-info">
             <h3 className="stat-label">Total Users</h3>
@@ -118,10 +129,20 @@ const Page = async ({
           </div>
           <div className="text-sm text-gray-500">System administrators</div>
         </div>
+
+        <div className="stat">
+          <div className="stat-info">
+            <h3 className="stat-label">Book Status</h3>
+            <p className="text-2xl font-bold text-indigo-600">{activeBooks}</p>
+          </div>
+          <div className="text-sm text-gray-500">
+            {activeBooks} active, {inactiveBooks} inactive
+          </div>
+        </div>
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Book Availability Chart */}
         <div className="stat">
           <h3 className="text-lg font-semibold mb-4">Book Availability</h3>
@@ -175,6 +196,45 @@ const Page = async ({
                 style={{ width: `${(pendingUsers / totalUsers) * 100}%` }}
               ></div>
             </div>
+          </div>
+        </div>
+
+        {/* Enhanced Book Information Chart */}
+        <div className="stat">
+          <h3 className="text-lg font-semibold mb-4">Book Information</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Books with ISBN</span>
+              <span className="font-medium">{booksWithISBN}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-indigo-600 h-2 rounded-full"
+                style={{ width: `${(booksWithISBN / totalBooks) * 100}%` }}
+              ></div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Books with Publisher</span>
+              <span className="font-medium">{booksWithPublisher}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-purple-600 h-2 rounded-full"
+                style={{ width: `${(booksWithPublisher / totalBooks) * 100}%` }}
+              ></div>
+            </div>
+
+            {averagePageCount > 0 && (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Avg Page Count</span>
+                  <span className="font-medium">
+                    {Math.round(averagePageCount)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

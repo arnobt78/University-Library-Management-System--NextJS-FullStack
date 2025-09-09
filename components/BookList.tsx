@@ -19,7 +19,7 @@ const BookList = ({ title, books, containerClassName }: Props) => {
           ))}
         </ul>
       ) : (
-        <p className="text-light-100 text-lg">No books available.</p>
+        <p className="text-lg text-light-100">No books available.</p>
       )}
     </section>
   );

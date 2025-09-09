@@ -28,6 +28,8 @@ const Page = async () => {
       videoUrl: books.videoUrl,
       summary: books.summary,
       createdAt: books.createdAt,
+      isActive: books.isActive,
+      updatedAt: books.updatedAt,
     })
     .from(borrowRecords)
     .innerJoin(books, eq(borrowRecords.bookId, books.id))

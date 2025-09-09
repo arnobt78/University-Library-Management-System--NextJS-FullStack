@@ -35,7 +35,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
       <div className="mx-auto w-full">
         <Header session={session} />
 
-        <div className="py-20">{children}</div>
+        <div className="py-8">{children}</div>
       </div>
     </main>
   );

@@ -66,6 +66,48 @@ const Page = async () => {
                         <span>Rating:</span>
                         <span className="font-medium">{book.rating}/5</span>
                       </div>
+
+                      {/* Enhanced Information */}
+                      {book.isbn && (
+                        <div className="flex justify-between text-sm">
+                          <span>ISBN:</span>
+                          <span className="font-medium text-xs">
+                            {book.isbn}
+                          </span>
+                        </div>
+                      )}
+
+                      {book.publicationYear && (
+                        <div className="flex justify-between text-sm">
+                          <span>Published:</span>
+                          <span className="font-medium">
+                            {book.publicationYear}
+                          </span>
+                        </div>
+                      )}
+
+                      {book.publisher && (
+                        <div className="flex justify-between text-sm">
+                          <span>Publisher:</span>
+                          <span
+                            className="font-medium text-xs truncate max-w-20"
+                            title={book.publisher}
+                          >
+                            {book.publisher}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between text-sm">
+                        <span>Status:</span>
+                        <span
+                          className={`font-medium ${
+                            book.isActive ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {book.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="mt-4 flex gap-2">

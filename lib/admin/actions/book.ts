@@ -4,13 +4,17 @@ import { db } from "@/database/drizzle";
 import { books } from "@/database/schema";
 import { eq } from "drizzle-orm";
 
-export const createBook = async (params: BookParams) => {
+export const createBook = async (
+  params: BookParams & { updatedBy?: string }
+) => {
   try {
     const newBook = await db
       .insert(books)
       .values({
         ...params,
         availableCopies: params.totalCopies, // Initially all copies are available
+        updatedBy: params.updatedBy || undefined,
+        isActive: params.isActive ?? true, // Default to true if not provided
       })
       .returning();
 
@@ -30,7 +34,7 @@ export const createBook = async (params: BookParams) => {
 
 export const updateBook = async (
   bookId: string,
-  params: Partial<BookParams>
+  params: Partial<BookParams> & { updatedBy?: string }
 ) => {
   try {
     // If totalCopies is being updated, we need to adjust availableCopies
@@ -65,6 +69,7 @@ export const updateBook = async (
         .set({
           ...params,
           availableCopies: newAvailableCopies,
+          updatedBy: params.updatedBy || undefined,
         })
         .where(eq(books.id, bookId))
         .returning();
@@ -77,7 +82,10 @@ export const updateBook = async (
       // Simple update without totalCopies change
       const updatedBook = await db
         .update(books)
-        .set(params)
+        .set({
+          ...params,
+          updatedBy: params.updatedBy || undefined,
+        })
         .where(eq(books.id, bookId))
         .returning();
 

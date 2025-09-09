@@ -5,7 +5,7 @@ import { IKVideo, ImageKitProvider } from "imagekitio-next";
 import config from "@/lib/config";
 
 const BookVideo = ({ videoUrl }: { videoUrl: string }) => {
-  // Check if the URL is actually a video file
+  // Check if the URL is actually a video file or an ImageKit video URL
   const isVideoFile =
     videoUrl &&
     (videoUrl.endsWith(".mp4") ||
@@ -13,7 +13,9 @@ const BookVideo = ({ videoUrl }: { videoUrl: string }) => {
       videoUrl.endsWith(".ogg") ||
       videoUrl.endsWith(".avi") ||
       videoUrl.endsWith(".mov") ||
-      videoUrl.includes("/video/"));
+      videoUrl.includes("/video/") ||
+      (videoUrl.includes("imagekit.io") &&
+        videoUrl.includes("/books/videos/")));
 
   // If it's not a video file, show a placeholder
   if (!isVideoFile) {
@@ -21,6 +23,19 @@ const BookVideo = ({ videoUrl }: { videoUrl: string }) => {
       <div className="flex h-64 w-full items-center justify-center rounded-xl bg-gray-100">
         <p className="text-gray-500">No video available</p>
       </div>
+    );
+  }
+
+  // For ImageKit URLs in videos folder, try to play them as videos
+  // even if they have .png extension (they might be misnamed video files)
+  if (videoUrl.includes("imagekit.io") && videoUrl.includes("/books/videos/")) {
+    return (
+      <ImageKitProvider
+        publicKey={config.env.imagekit.publicKey}
+        urlEndpoint={config.env.imagekit.urlEndpoint}
+      >
+        <IKVideo src={videoUrl} controls={true} className="w-full rounded-xl" />
+      </ImageKitProvider>
     );
   }
 

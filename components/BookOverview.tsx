@@ -3,11 +3,12 @@ import React from "react";
 import BookCover from "@/components/BookCover";
 import BorrowBook from "@/components/BorrowBook";
 import { db } from "@/database/drizzle";
-import { users } from "@/database/schema";
-import { eq } from "drizzle-orm";
+import { users, borrowRecords } from "@/database/schema";
+import { eq, count, sql } from "drizzle-orm";
 
 interface Props extends Book {
   userId: string;
+  isDetailPage?: boolean;
 }
 const BookOverview = async ({
   title,
@@ -21,6 +22,17 @@ const BookOverview = async ({
   coverUrl,
   id,
   userId,
+  isDetailPage = false,
+  // Enhanced fields
+  isbn,
+  publicationYear,
+  publisher,
+  language,
+  pageCount,
+  edition,
+  isActive,
+  createdAt,
+  updatedAt,
 }: Props) => {
   const [user] = await db
     .select()
@@ -28,10 +40,21 @@ const BookOverview = async ({
     .where(eq(users.id, userId))
     .limit(1);
 
+  // Get borrow records statistics for this book
+  const borrowStats = await db
+    .select({
+      totalBorrows: count(),
+      activeBorrows: sql<number>`count(case when ${borrowRecords.status} = 'BORROWED' then 1 end)`,
+      returnedBorrows: sql<number>`count(case when ${borrowRecords.status} = 'RETURNED' then 1 end)`,
+    })
+    .from(borrowRecords)
+    .where(eq(borrowRecords.bookId, id));
+
   const borrowingEligibility = {
-    isEligible: availableCopies > 0 && user?.status === "APPROVED",
-    message:
-      availableCopies <= 0
+    isEligible: availableCopies > 0 && user?.status === "APPROVED" && isActive,
+    message: !isActive
+      ? "This book is currently unavailable"
+      : availableCopies <= 0
         ? "Book is not available"
         : "You are not eligible to borrow this book",
   };
@@ -56,24 +79,192 @@ const BookOverview = async ({
           </div>
         </div>
 
-        <div className="book-copies">
-          <p>
-            Total Books <span>{totalCopies}</span>
-          </p>
+        {/* Enhanced Book Information */}
+        <div className="pt-4 text-lg font-semibold text-light-100">
+          Book Details
+        </div>
+        <div className="book-info">
+          <div className="space-y-3">
+            {/* First row: ISBN and Published */}
+            <div className="grid grid-cols-2 gap-36">
+              <p>
+                ISBN{" "}
+                <span className="font-semibold text-light-200">
+                  {isbn || "N/A"}
+                </span>
+              </p>
+              <p>
+                Published{" "}
+                <span className="font-semibold text-light-200">
+                  {publicationYear || "N/A"}
+                </span>
+              </p>
+            </div>
 
-          <p>
-            Available Books <span>{availableCopies}</span>
-          </p>
+            {/* Second row: Publisher and Language */}
+            <div className="grid grid-cols-2 gap-36">
+              <p>
+                Publisher{" "}
+                <span className="font-semibold text-light-200">
+                  {publisher || "N/A"}
+                </span>
+              </p>
+              <p>
+                Language{" "}
+                <span className="font-semibold text-light-200">
+                  {language || "N/A"}
+                </span>
+              </p>
+            </div>
+
+            {/* Third row: Pages and Edition */}
+            <div className="grid grid-cols-2 gap-36">
+              <p>
+                Pages{" "}
+                <span className="font-semibold text-light-200">
+                  {pageCount || "N/A"}
+                </span>
+              </p>
+              <p>
+                Edition{" "}
+                <span className="font-semibold text-light-200">
+                  {edition || "N/A"}
+                </span>
+              </p>
+            </div>
+
+            {/* Fourth row: Total Copies and Available Copies */}
+            <div className="">
+              <div className="grid grid-cols-2 gap-36">
+                <p>
+                  Total Books{" "}
+                  <span className="font-semibold text-light-200">
+                    {totalCopies || "N/A"}
+                  </span>
+                </p>
+                <p>
+                  Available Books{" "}
+                  <span className="font-semibold text-light-200">
+                    {availableCopies || "N/A"}
+                  </span>
+                </p>
+              </div>
+
+              {!isActive && (
+                <p className="font-semibold text-red-400">
+                  ⚠️ This book is currently unavailable
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Database Metadata Section */}
+        <div className="book-info">
+          <div className="pt-4 text-lg font-semibold text-light-100">
+            Library Database Information
+          </div>
+          <div className="space-y-3">
+            {/* Database dates */}
+            <div className="grid grid-cols-2 gap-12">
+              <p>
+                Added to Library{" "}
+                <span className="font-semibold text-light-200">
+                  {createdAt
+                    ? new Date(createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "N/A"}
+                </span>
+              </p>
+              <p>
+                Last Updated{" "}
+                <span className="font-semibold text-light-200">
+                  {updatedAt
+                    ? new Date(updatedAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "N/A"}
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Borrow Statistics Section */}
+        <div className="book-info">
+          <div className="pt-4 text-lg font-semibold text-light-100">
+            Borrow Statistics
+          </div>
+          <div className="space-y-3">
+            {/* Borrow counts */}
+            <div className="grid grid-cols-2 gap-24">
+              <p>
+                Total Times Borrowed{" "}
+                <span className="font-semibold text-light-200">
+                  {borrowStats[0]?.totalBorrows || 0}
+                </span>
+              </p>
+              <p>
+                Currently Borrowed{" "}
+                <span className="font-semibold text-light-200">
+                  {borrowStats[0]?.activeBorrows || 0}
+                </span>
+              </p>
+            </div>
+
+            {/* Availability status */}
+            <div className="grid grid-cols-2 gap-24">
+              <p>
+                Availability Status{" "}
+                <span
+                  className={`font-semibold ${
+                    availableCopies > 0 ? "text-green-400" : "text-red-400"
+                  }`}
+                >
+                  {availableCopies > 0 ? "Available" : "Unavailable"}
+                </span>
+              </p>
+              <p>
+                Successfully Returned{" "}
+                <span className="font-semibold text-light-200">
+                  {borrowStats[0]?.returnedBorrows || 0}
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
 
         <p className="book-description">{description}</p>
 
         {user && (
-          <BorrowBook
-            bookId={id}
-            userId={userId}
-            borrowingEligibility={borrowingEligibility}
-          />
+          <div className="flex gap-4">
+            <BorrowBook
+              bookId={id}
+              userId={userId}
+              borrowingEligibility={borrowingEligibility}
+            />
+            {!isDetailPage && (
+              <a
+                href={`/books/${id}`}
+                className="book-overview_btn flex items-center gap-2 rounded-lg bg-gray-600 px-6 py-3 text-white transition-colors hover:bg-gray-700"
+              >
+                <img
+                  src="/icons/book.svg"
+                  alt="book details"
+                  width={20}
+                  height={20}
+                />
+                <p className="font-bebas-neue text-xl text-dark-100">
+                  Book Details
+                </p>
+              </a>
+            )}
+          </div>
         )}
       </div>
 

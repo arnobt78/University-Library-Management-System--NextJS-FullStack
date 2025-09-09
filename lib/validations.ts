@@ -27,4 +27,17 @@ export const bookSchema = z.object({
     .regex(/^#[0-9A-F]{6}$/i),
   videoUrl: z.string().nonempty(),
   summary: z.string().trim().min(10),
+  // Enhanced fields - all optional
+  isbn: z.string().trim().max(20).optional(),
+  publicationYear: z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .max(new Date().getFullYear())
+    .optional(),
+  publisher: z.string().trim().max(255).optional(),
+  language: z.string().trim().max(50).optional(),
+  pageCount: z.coerce.number().int().positive().optional(),
+  edition: z.string().trim().max(50).optional(),
+  isActive: z.boolean().optional(),
 });
