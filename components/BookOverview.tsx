@@ -4,7 +4,7 @@ import BookCover from "@/components/BookCover";
 import BorrowBook from "@/components/BorrowBook";
 import { db } from "@/database/drizzle";
 import { users, borrowRecords } from "@/database/schema";
-import { eq, count, sql } from "drizzle-orm";
+import { eq, count, sql, and, or } from "drizzle-orm";
 
 interface Props extends Book {
   userId: string;
@@ -50,13 +50,37 @@ const BookOverview = async ({
     .from(borrowRecords)
     .where(eq(borrowRecords.bookId, id));
 
+  // Check if the current user already has an active or pending borrow for this book
+  const userExistingBorrow = await db
+    .select()
+    .from(borrowRecords)
+    .where(
+      and(
+        eq(borrowRecords.userId, userId),
+        eq(borrowRecords.bookId, id),
+        or(
+          eq(borrowRecords.status, "BORROWED"),
+          eq(borrowRecords.status, "PENDING")
+        )
+      )
+    )
+    .limit(1);
+
+  const hasExistingBorrow = userExistingBorrow.length > 0;
+
   const borrowingEligibility = {
-    isEligible: availableCopies > 0 && user?.status === "APPROVED" && isActive,
-    message: !isActive
-      ? "This book is currently unavailable"
-      : availableCopies <= 0
-        ? "Book is not available"
-        : "You are not eligible to borrow this book",
+    isEligible:
+      availableCopies > 0 &&
+      user?.status === "APPROVED" &&
+      isActive &&
+      !hasExistingBorrow,
+    message: hasExistingBorrow
+      ? "You already have an active borrow or pending request for this book"
+      : !isActive
+        ? "This book is currently unavailable"
+        : availableCopies <= 0
+          ? "Book is not available"
+          : "You are not eligible to borrow this book",
   };
   return (
     <section className="book-overview">

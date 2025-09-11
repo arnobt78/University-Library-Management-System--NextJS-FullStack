@@ -28,13 +28,10 @@ export const borrowBook = async (params: BorrowBookParams) => {
       userId,
       bookId,
       dueDate,
-      status: "BORROWED",
+      status: "PENDING",
     });
 
-    await db
-      .update(books)
-      .set({ availableCopies: book[0].availableCopies - 1 })
-      .where(eq(books.id, bookId));
+    // Don't decrement available copies until admin approves
 
     return {
       success: true,

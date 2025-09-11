@@ -1,7 +1,11 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { getAllBorrowRequests } from "@/lib/admin/actions/borrow";
-import { returnBook } from "@/lib/admin/actions/borrow";
+import {
+  getAllBorrowRequests,
+  returnBook,
+  approveBorrowRequest,
+  rejectBorrowRequest,
+} from "@/lib/admin/actions/borrow";
 import { redirect } from "next/navigation";
 import BookCover from "@/components/BookCover";
 
@@ -84,9 +88,11 @@ const Page = async () => {
                         <span className="font-medium">Status:</span>
                         <span
                           className={`ml-2 rounded-full px-2 py-1 text-xs font-medium ${
-                            request.status === "BORROWED"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
+                            request.status === "PENDING"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : request.status === "BORROWED"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-green-100 text-green-800"
                           }`}
                         >
                           {request.status}
@@ -97,6 +103,42 @@ const Page = async () => {
 
                   {/* Actions */}
                   <div className="shrink-0">
+                    {request.status === "PENDING" && (
+                      <div className="flex gap-2">
+                        <form
+                          action={async () => {
+                            "use server";
+                            const result = await approveBorrowRequest(
+                              request.id
+                            );
+                            if (result.success) {
+                              redirect("/admin/book-requests?success=approved");
+                            } else {
+                              redirect("/admin/book-requests?error=failed");
+                            }
+                          }}
+                        >
+                          <Button className="bg-green-600 hover:bg-green-700">
+                            Approve
+                          </Button>
+                        </form>
+                        <form
+                          action={async () => {
+                            "use server";
+                            const result = await rejectBorrowRequest(
+                              request.id
+                            );
+                            if (result.success) {
+                              redirect("/admin/book-requests?success=rejected");
+                            } else {
+                              redirect("/admin/book-requests?error=failed");
+                            }
+                          }}
+                        >
+                          <Button variant="destructive">Reject</Button>
+                        </form>
+                      </div>
+                    )}
                     {request.status === "BORROWED" && (
                       <form
                         action={async () => {

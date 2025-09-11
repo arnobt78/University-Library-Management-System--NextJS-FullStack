@@ -83,13 +83,21 @@ export const signUp = async (params: AuthCredentials) => {
       universityCard,
     });
 
-    await workflowClient.trigger({
-      url: `${config.env.prodApiEndpoint}/api/workflows/onboarding`,
-      body: {
-        email,
-        fullName,
-      },
-    });
+    // Only trigger workflow in production or if explicitly enabled
+    if (
+      process.env.NODE_ENV === "production" ||
+      process.env.ENABLE_WORKFLOWS === "true"
+    ) {
+      await workflowClient.trigger({
+        url: `${config.env.prodApiEndpoint}/api/workflows/onboarding`,
+        body: {
+          email,
+          fullName,
+        },
+      });
+    } else {
+      console.log("Skipping workflow trigger in development mode");
+    }
 
     await signInWithCredentials({ email, password });
 

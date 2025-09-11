@@ -31,7 +31,7 @@ const BorrowBook = ({
         description: message,
         variant: "destructive",
       });
-      return; // Add return to prevent further execution
+      return;
     }
 
     setBorrowing(true);
@@ -41,12 +41,15 @@ const BorrowBook = ({
 
       if (result.success) {
         toast({
-          title: "📚 Book Borrowed Successfully!",
+          title: "📚 Borrow Request Submitted!",
           description:
-            "Your book has been added to your borrowed collection. Enjoy reading!",
+            "Your borrow request has been submitted and is pending admin approval. Check your profile for updates.",
         });
 
-        router.push("/");
+        // Use setTimeout to ensure the toast is shown before navigation
+        setTimeout(() => {
+          router.push("/my-profile");
+        }, 100);
       } else {
         toast({
           title: "❌ Borrowing Failed",
@@ -56,7 +59,8 @@ const BorrowBook = ({
           variant: "destructive",
         });
       }
-    } catch {
+    } catch (error) {
+      console.error("Borrow book error:", error);
       toast({
         title: "❌ Network Error",
         description:

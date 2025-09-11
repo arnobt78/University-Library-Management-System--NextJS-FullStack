@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import Header from "@/components/Header";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { after } from "next/server";
 import { db } from "@/database/drizzle";
 import { users } from "@/database/schema";
 import { eq } from "drizzle-orm";
@@ -12,23 +11,29 @@ const Layout = async ({ children }: { children: ReactNode }) => {
 
   if (!session) redirect("/sign-in");
 
-  after(async () => {
-    if (!session?.user?.id) return;
+  // Update last activity date synchronously
+  if (session?.user?.id) {
+    try {
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, session.user.id))
+        .limit(1);
 
-    const user = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, session?.user?.id))
-      .limit(1);
-
-    if (user[0].lastActivityDate === new Date().toISOString().slice(0, 10))
-      return;
-
-    await db
-      .update(users)
-      .set({ lastActivityDate: new Date().toISOString().slice(0, 10) })
-      .where(eq(users.id, session?.user?.id));
-  });
+      if (
+        user.length > 0 &&
+        user[0].lastActivityDate !== new Date().toISOString().slice(0, 10)
+      ) {
+        await db
+          .update(users)
+          .set({ lastActivityDate: new Date().toISOString().slice(0, 10) })
+          .where(eq(users.id, session.user.id));
+      }
+    } catch (error) {
+      // Silently handle any database errors to prevent blocking the UI
+      console.warn("Failed to update last activity date:", error);
+    }
+  }
 
   return (
     <main className="root-container">
