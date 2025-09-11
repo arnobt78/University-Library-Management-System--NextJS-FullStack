@@ -7,13 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BookCover from "@/components/BookCover";
 import CountdownTimer from "@/components/CountdownTimer";
 import { useRouter } from "next/navigation";
+import { returnBook } from "@/lib/admin/actions/borrow";
+import { showToast } from "@/lib/toast";
 // Define the actual data structure from the database query
 interface BorrowRecordWithBook {
   id: string;
   userId: string;
   bookId: string;
   borrowDate: Date;
-  dueDate: Date;
+  dueDate: Date | null; // Can be null for pending requests
   returnDate?: Date | null;
   status: "PENDING" | "BORROWED" | "RETURNED";
   borrowedBy?: string | null;
@@ -93,6 +95,47 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
       router.push(`/books/${record.book.id}`);
     };
 
+    const handleReturnBook = async () => {
+      try {
+        const result = await returnBook(record.id);
+        if (result.success) {
+          if (result.data?.isOverdue) {
+            showToast.warning(
+              "Book Returned with Fine",
+              `"${record.book.title}" was returned ${result.data.daysOverdue} days overdue. Fine: $${result.data.fineAmount.toFixed(2)}`
+            );
+          } else {
+            showToast.book.returnSuccess(record.book.title);
+          }
+          // Refresh the page to update the data
+          setTimeout(() => {
+            router.refresh();
+          }, 1000);
+        } else {
+          showToast.book.returnError(result.error || "Failed to return book");
+        }
+      } catch (error) {
+        console.error("Error returning book:", error);
+        showToast.book.returnError(
+          "An error occurred while returning the book"
+        );
+      }
+    };
+
+    // Calculate if book is overdue (only for BORROWED status with dueDate)
+    const today = new Date();
+    const isOverdue =
+      record.status === "BORROWED" &&
+      record.dueDate &&
+      today > new Date(record.dueDate);
+    const daysOverdue = isOverdue
+      ? Math.floor(
+          (today.getTime() - new Date(record.dueDate!).getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      : 0;
+    const calculatedFine = isOverdue ? daysOverdue * 1.0 : 0;
+
     return (
       <Card className="mb-4">
         <CardContent className="p-4">
@@ -112,9 +155,17 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
               {/* Header Row: Title and Status */}
               <div className="mb-3 flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {record.book.title}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {record.book.title}
+                    </h3>
+                    {/* Overdue Warning */}
+                    {isOverdue && (
+                      <Badge variant="destructive" className="text-xs">
+                        OVERDUE ({daysOverdue} days)
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-600">
                     by {record.book.author}
                   </p>
@@ -152,7 +203,9 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Due</span>
-                  <p className="text-gray-600">{formatDate(record.dueDate)}</p>
+                  <p className="text-gray-600">
+                    {record.dueDate ? formatDate(record.dueDate) : "Not set"}
+                  </p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Status</span>
@@ -181,15 +234,17 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                   )}
                 </div>
 
-                {/* Countdown Timer */}
-                {showCountdown && record.status === "BORROWED" && (
-                  <div className="shrink-0">
-                    <CountdownTimer
-                      dueDate={record.dueDate}
-                      borrowDate={record.borrowDate}
-                    />
-                  </div>
-                )}
+                {/* Countdown Timer - only show for BORROWED status with dueDate */}
+                {showCountdown &&
+                  record.status === "BORROWED" &&
+                  record.dueDate && (
+                    <div className="shrink-0">
+                      <CountdownTimer
+                        dueDate={record.dueDate}
+                        borrowDate={record.borrowDate}
+                      />
+                    </div>
+                  )}
               </div>
 
               {/* Additional Info Row */}
@@ -209,20 +264,25 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                   </div>
                 )}
 
-                {showCountdown && record.status === "BORROWED" && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <img
-                      src="/icons/book.svg"
-                      alt="borrowed"
-                      width={16}
-                      height={16}
-                    />
-                    <span className="text-blue-700">
-                      Currently borrowed, please return on{" "}
-                      {formatDate(record.dueDate)}
-                    </span>
-                  </div>
-                )}
+                {showCountdown &&
+                  record.status === "BORROWED" &&
+                  record.dueDate && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <img
+                        src="/icons/book.svg"
+                        alt="borrowed"
+                        width={16}
+                        height={16}
+                      />
+                      <span
+                        className={isOverdue ? "text-red-700" : "text-blue-700"}
+                      >
+                        {isOverdue
+                          ? `OVERDUE! Please return immediately (${daysOverdue} days late)`
+                          : `Currently borrowed, please return on ${formatDate(record.dueDate)}`}
+                      </span>
+                    </div>
+                  )}
 
                 {record.status === "RETURNED" && (
                   <div className="flex items-center gap-2 text-sm">
@@ -239,12 +299,19 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                 )}
 
                 <div className="flex items-center gap-4">
-                  {record.fineAmount > 0 && (
+                  {/* Show existing fine or calculated overdue fine */}
+                  {(record.fineAmount > 0 || calculatedFine > 0) && (
                     <div className="flex items-center gap-1">
                       <span className="text-sm font-medium text-red-600">
-                        ${record.fineAmount.toFixed(2)}
+                        $
+                        {(record.fineAmount > 0
+                          ? record.fineAmount
+                          : calculatedFine
+                        ).toFixed(2)}
                       </span>
-                      <span className="text-sm text-gray-500">fine</span>
+                      <span className="text-sm text-gray-500">
+                        {isOverdue ? "overdue fine" : "fine"}
+                      </span>
                     </div>
                   )}
                   {record.renewalCount > 0 && (
@@ -257,19 +324,40 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                   )}
                 </div>
 
-                {/* View Book Details Link */}
-                <button
-                  onClick={handleViewDetails}
-                  className="flex items-center gap-1 text-sm text-blue-600 transition-colors hover:text-blue-800"
-                >
-                  <img
-                    src="/icons/book.svg"
-                    alt="view details"
-                    width={16}
-                    height={16}
-                  />
-                  <span className="font-medium">View Book Details</span>
-                </button>
+                {/* Action Buttons */}
+                <div className="flex items-center gap-3">
+                  {/* Return Book Button - only show for BORROWED status */}
+                  {record.status === "BORROWED" && (
+                    <button
+                      onClick={handleReturnBook}
+                      className="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-red-700"
+                    >
+                      <img
+                        src="/icons/book.svg"
+                        alt="return book"
+                        width={16}
+                        height={16}
+                      />
+                      <span className="font-medium">Return Book</span>
+                    </button>
+                  )}
+
+                  {/* View Book Details Link - hide for RETURNED status */}
+                  {record.status !== "RETURNED" && (
+                    <button
+                      onClick={handleViewDetails}
+                      className="flex items-center gap-1 text-sm text-blue-600 transition-colors hover:text-blue-800"
+                    >
+                      <img
+                        src="/icons/book.svg"
+                        alt="view details"
+                        width={16}
+                        height={16}
+                      />
+                      <span className="font-medium">View Book Details</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

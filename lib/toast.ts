@@ -75,6 +75,19 @@ export const showToast = {
         variant: "destructive",
       });
     },
+    returnSuccess: (bookTitle: string) => {
+      toast({
+        title: "📚 Book Returned!",
+        description: `"${bookTitle}" has been successfully returned to the library. Thank you!`,
+      });
+    },
+    returnError: (message: string) => {
+      toast({
+        title: "❌ Cannot Return Book",
+        description: message,
+        variant: "destructive",
+      });
+    },
   },
 
   file: {

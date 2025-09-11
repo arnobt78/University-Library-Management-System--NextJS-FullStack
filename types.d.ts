@@ -74,7 +74,7 @@ interface BorrowRecord {
   userId: string;
   bookId: string;
   borrowDate: Date;
-  dueDate: Date;
+  dueDate: Date | null; // Can be null for pending requests
   returnDate?: Date | null;
   status: "PENDING" | "BORROWED" | "RETURNED";
   // Enhanced tracking and control fields

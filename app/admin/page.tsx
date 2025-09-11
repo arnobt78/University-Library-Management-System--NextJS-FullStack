@@ -33,7 +33,11 @@ const Page = async ({
     (sum, book) => sum + book.availableCopies,
     0
   );
-  const borrowedCopies = totalCopies - availableCopies;
+
+  // Calculate borrowed copies based on actual BORROWED status (not PENDING)
+  const borrowedCopies = borrowRequests.filter(
+    (r) => r.status === "BORROWED"
+  ).length;
 
   // Enhanced book statistics
   const activeBooks = allBooks.filter((book) => book.isActive).length;
@@ -48,6 +52,9 @@ const Page = async ({
 
   const activeBorrows = borrowRequests.filter(
     (r) => r.status === "BORROWED"
+  ).length;
+  const pendingBorrows = borrowRequests.filter(
+    (r) => r.status === "PENDING"
   ).length;
   const returnedBooks = borrowRequests.filter(
     (r) => r.status === "RETURNED"
@@ -119,7 +126,9 @@ const Page = async ({
               {activeBorrows}
             </p>
           </div>
-          <div className="text-sm text-gray-500">{returnedBooks} returned</div>
+          <div className="text-sm text-gray-500">
+            {pendingBorrows} pending, {returnedBooks} returned
+          </div>
         </div>
 
         <div className="stat">

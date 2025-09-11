@@ -75,12 +75,12 @@ export const borrowRecords = pgTable("borrow_records", {
   borrowDate: timestamp("borrow_date", { withTimezone: true })
     .defaultNow()
     .notNull(),
-  dueDate: date("due_date").notNull(),
+  dueDate: date("due_date"), // Nullable - set when admin approves
   returnDate: date("return_date"),
   status: BORROW_STATUS_ENUM("status").default("BORROWED").notNull(),
   // Enhanced tracking and control fields
-  borrowedBy: uuid("borrowed_by").references(() => users.id), // Who actually borrowed (if different from user_id)
-  returnedBy: uuid("returned_by").references(() => users.id), // Who returned the book
+  borrowedBy: text("borrowed_by"), // Who actually borrowed (email for readability)
+  returnedBy: text("returned_by"), // Who returned the book (email for readability)
   fineAmount: decimal("fine_amount", { precision: 10, scale: 2 }).default(
     "0.00"
   ), // Late return fines
@@ -88,6 +88,6 @@ export const borrowRecords = pgTable("borrow_records", {
   renewalCount: integer("renewal_count").default(0).notNull(), // How many times the book was renewed
   lastReminderSent: timestamp("last_reminder_sent", { withTimezone: true }), // Track reminder notifications
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-  updatedBy: uuid("updated_by").references(() => users.id),
+  updatedBy: text("updated_by"), // Email for readability
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });

@@ -89,10 +89,13 @@ const FileUpload = ({
   }
 
   const onSuccess = (res: UploadSuccessResponse) => {
+    // Construct full ImageKit URL from the relative filePath
+    const fullUrl = `${urlEndpoint}${res.filePath}`;
+
     // @ts-expect-error: imagekitio-next types are not exported, but res has filePath
-    setFile(res);
+    setFile({ filePath: fullUrl });
     // @ts-expect-error: imagekitio-next types are not exported, but res has filePath
-    onFileChange(res.filePath);
+    onFileChange(fullUrl);
 
     toast({
       title: `✅ ${type === "image" ? "Image" : "Video"} Uploaded Successfully!`,

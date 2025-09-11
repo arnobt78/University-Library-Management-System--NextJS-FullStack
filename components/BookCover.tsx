@@ -43,14 +43,22 @@ const BookCover = ({
         className="absolute z-10"
         style={{ left: "12%", width: "87.5%", height: "88%" }}
       >
-        <IKImage
-          src={coverImage}
-          urlEndpoint={config.env.imagekit.urlEndpoint}
-          alt="Book cover"
-          fill
-          className="rounded-sm object-fill"
-          lqip={{ active: true }}
-        />
+        {coverImage.startsWith("http") ? (
+          <img
+            src={coverImage}
+            alt="Book cover"
+            className="size-full rounded-sm object-fill"
+          />
+        ) : (
+          <IKImage
+            path={coverImage}
+            urlEndpoint={config.env.imagekit.urlEndpoint}
+            alt="Book cover"
+            fill
+            className="rounded-sm object-fill"
+            lqip={{ active: true }}
+          />
+        )}
       </div>
     </div>
   );

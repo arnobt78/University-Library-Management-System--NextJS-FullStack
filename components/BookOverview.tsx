@@ -2,6 +2,7 @@ import React from "react";
 // import Image from "next/image";
 import BookCover from "@/components/BookCover";
 import BorrowBook from "@/components/BorrowBook";
+import ReturnBookButton from "@/components/ReturnBookButton";
 import { db } from "@/database/drizzle";
 import { users, borrowRecords } from "@/database/schema";
 import { eq, count, sql, and, or } from "drizzle-orm";
@@ -267,11 +268,21 @@ const BookOverview = async ({
 
         {user && (
           <div className="flex gap-4">
-            <BorrowBook
-              bookId={id}
-              userId={userId}
-              borrowingEligibility={borrowingEligibility}
-            />
+            {/* Show Return Book button if user has an active borrow */}
+            {hasExistingBorrow &&
+            userExistingBorrow[0]?.status === "BORROWED" ? (
+              <ReturnBookButton
+                recordId={userExistingBorrow[0].id}
+                bookTitle={title}
+                dueDate={userExistingBorrow[0].dueDate}
+              />
+            ) : (
+              <BorrowBook
+                bookId={id}
+                userId={userId}
+                borrowingEligibility={borrowingEligibility}
+              />
+            )}
             {!isDetailPage && (
               <a
                 href={`/books/${id}`}

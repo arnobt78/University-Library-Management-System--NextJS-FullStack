@@ -47,10 +47,10 @@ const BookForm = ({ type = "create", ...book }: Props) => {
       summary: book.summary || "",
       // Enhanced fields
       isbn: book.isbn || "",
-      publicationYear: book.publicationYear || undefined,
+      publicationYear: book.publicationYear || "",
       publisher: book.publisher || "",
       language: book.language || "English",
-      pageCount: book.pageCount || undefined,
+      pageCount: book.pageCount || "",
       edition: book.edition || "",
       isActive: book.isActive ?? true,
     },

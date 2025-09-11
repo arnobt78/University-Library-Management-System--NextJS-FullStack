@@ -75,14 +75,24 @@ const Page = async () => {
 
                     <div className="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
                       <div>
-                        <span className="font-medium">Borrow Date:</span>
+                        <span className="font-medium">
+                          {request.status === "PENDING"
+                            ? "Request Created At:"
+                            : "Borrow Date:"}
+                        </span>
                         <p>
                           {new Date(request.borrowDate).toLocaleDateString()}
                         </p>
                       </div>
                       <div>
                         <span className="font-medium">Due Date:</span>
-                        <p>{new Date(request.dueDate).toLocaleDateString()}</p>
+                        <p>
+                          {request.dueDate
+                            ? new Date(request.dueDate).toLocaleDateString()
+                            : request.status === "PENDING"
+                              ? "N/A (7 days from approval)"
+                              : "Not set"}
+                        </p>
                       </div>
                       <div>
                         <span className="font-medium">Status:</span>

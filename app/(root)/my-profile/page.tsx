@@ -68,7 +68,7 @@ const Page = async () => {
     .filter((record) => record.status === "BORROWED")
     .map((record) => ({
       ...record,
-      dueDate: new Date(record.dueDate),
+      dueDate: record.dueDate ? new Date(record.dueDate) : null,
       returnDate: record.returnDate ? new Date(record.returnDate) : null,
       fineAmount: parseFloat(record.fineAmount || "0"),
     }));
@@ -77,14 +77,14 @@ const Page = async () => {
     .filter((record) => record.status === "PENDING")
     .map((record) => ({
       ...record,
-      dueDate: new Date(record.dueDate),
+      dueDate: record.dueDate ? new Date(record.dueDate) : null,
       returnDate: record.returnDate ? new Date(record.returnDate) : null,
       fineAmount: parseFloat(record.fineAmount || "0"),
     }));
 
   const borrowHistory = allBorrowRecords.map((record) => ({
     ...record,
-    dueDate: new Date(record.dueDate),
+    dueDate: record.dueDate ? new Date(record.dueDate) : null,
     returnDate: record.returnDate ? new Date(record.returnDate) : null,
     fineAmount: parseFloat(record.fineAmount || "0"),
   }));
