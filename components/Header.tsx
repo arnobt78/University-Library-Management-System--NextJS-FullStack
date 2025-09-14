@@ -77,7 +77,7 @@ const Header = async ({ session }: HeaderProps) => {
 
         {/* Logout button */}
         <li>
-          <form action={logoutAction} className="mb-0">
+          <form action={logoutAction} className="mb-0 text-dark-100">
             <Button>Logout</Button>
           </form>
         </li>
