@@ -274,7 +274,11 @@ const BookOverview = async ({
               <ReturnBookButton
                 recordId={userExistingBorrow[0].id}
                 bookTitle={title}
-                dueDate={userExistingBorrow[0].dueDate}
+                dueDate={
+                  userExistingBorrow[0].dueDate
+                    ? new Date(userExistingBorrow[0].dueDate)
+                    : null
+                }
               />
             ) : (
               <BorrowBook

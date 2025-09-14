@@ -2,7 +2,7 @@
 
 import { db } from "@/database/drizzle";
 import { borrowRecords, books, users } from "@/database/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export const getAllBorrowRequests = async () => {
   try {
@@ -137,10 +137,7 @@ export const rejectBorrowRequest = async (recordId: string) => {
   }
 };
 
-export const returnBook = async (
-  recordId: string,
-  returnedByUserId?: string
-) => {
+export const returnBook = async (recordId: string) => {
   try {
     const today = new Date().toISOString().split("T")[0];
 
@@ -163,14 +160,16 @@ export const returnBook = async (
     }
 
     // Calculate fine if overdue
-    const dueDate = new Date(record[0].dueDate);
+    const dueDate = record[0].dueDate ? new Date(record[0].dueDate) : null;
     const returnDate = new Date(today);
-    const daysOverdue = Math.max(
-      0,
-      Math.floor(
-        (returnDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
-      )
-    );
+    const daysOverdue = dueDate
+      ? Math.max(
+          0,
+          Math.floor(
+            (returnDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+          )
+        )
+      : 0;
     const fineAmount =
       daysOverdue > 0 ? (daysOverdue * 1.0).toFixed(2) : "0.00"; // $1 per day overdue
 

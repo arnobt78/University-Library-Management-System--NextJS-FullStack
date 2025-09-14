@@ -12,6 +12,7 @@ interface BookCardProps extends Book {
 const BookCard = ({
   id,
   title,
+  author,
   genre,
   coverColor,
   coverUrl,
@@ -26,6 +27,7 @@ const BookCard = ({
 
       <div className={cn("mt-4", !isLoanedBook && "xs:max-w-40 max-w-28")}>
         <p className="book-title">{title}</p>
+        <p className="book-author">{author}</p>
         <p className="book-genre">{genre}</p>
       </div>
 

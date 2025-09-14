@@ -34,6 +34,9 @@ const Header = async ({ session }: HeaderProps) => {
           <Link href="/">Home</Link>
         </li>
         <li>
+          <Link href="/all-books">All Books</Link>
+        </li>
+        <li>
           <Link href="/my-profile">My Profile</Link>
         </li>
 

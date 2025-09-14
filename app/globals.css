@@ -41,6 +41,10 @@
     @apply mt-2 line-clamp-1 text-base font-semibold text-white xs:text-xl;
   }
 
+  .book-author {
+    @apply mt-1 line-clamp-1 text-sm text-light-200 xs:text-base;
+  }
+
   .book-genre {
     @apply mt-1 line-clamp-1 text-sm italic text-light-100 xs:text-base;
   }
@@ -85,7 +89,7 @@
 
   /* Book List */
   .book-list {
-    @apply mt-10 flex flex-wrap gap-5 max-xs:justify-between xs:gap-10;
+    @apply mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 max-xs:justify-between xs:gap-10;
   }
 
   /* Book Overview */
