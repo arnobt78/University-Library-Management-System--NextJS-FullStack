@@ -5,6 +5,7 @@ import { logoutAction } from "@/lib/actions/logout";
 import { db } from "@/database/drizzle";
 import { users } from "@/database/schema";
 import { eq } from "drizzle-orm";
+import AdminDropdown from "@/components/AdminDropdown";
 
 interface HeaderProps {
   session: Session;
@@ -39,26 +40,15 @@ const Header = async ({ session }: HeaderProps) => {
         <li>
           <Link href="/my-profile">My Profile</Link>
         </li>
+        <li>
+          <Link href="/performance">Performance</Link>
+        </li>
 
         {/* Admin-only navigation items */}
         {isAdmin ? (
-          <>
-            <li>
-              <Link href="/admin">Admin Dashboard</Link>
-            </li>
-            <li>
-              <Link href="/admin/users">Users</Link>
-            </li>
-            <li>
-              <Link href="/admin/books">Books</Link>
-            </li>
-            <li>
-              <Link href="/admin/book-requests">Borrow Requests</Link>
-            </li>
-            <li>
-              <Link href="/admin/account-requests">Account Requests</Link>
-            </li>
-          </>
+          <li>
+            <AdminDropdown />
+          </li>
         ) : (
           <li>
             <Link

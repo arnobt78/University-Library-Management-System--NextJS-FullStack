@@ -38,6 +38,16 @@ export const adminSideBarLinks = [
     route: "/admin/account-requests",
     text: "Account Requests",
   },
+  {
+    img: "/icons/admin/bookmark.svg",
+    route: "/admin/business-insights",
+    text: "Analytics",
+  },
+  {
+    img: "/icons/admin/edit.svg",
+    route: "/admin/automation",
+    text: "Automation",
+  },
 ];
 
 export const FIELD_NAMES = {

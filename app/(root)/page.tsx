@@ -1,5 +1,6 @@
 import BookList from "@/components/BookList";
 import BookOverview from "@/components/BookOverview";
+import PerformanceWrapper from "@/components/PerformanceWrapper";
 import { db } from "@/database/drizzle";
 import { books, users, borrowRecords } from "@/database/schema";
 import { auth } from "@/auth";
@@ -105,7 +106,7 @@ const Home = async () => {
   }
 
   return (
-    <>
+    <PerformanceWrapper pageName="home">
       <BookOverview {...latestBooks[0]} userId={session?.user?.id as string} />
 
       <BookList
@@ -114,7 +115,7 @@ const Home = async () => {
         containerClassName="mt-24"
         showViewAllButton={true}
       />
-    </>
+    </PerformanceWrapper>
   );
 };
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import QueryProvider from "@/components/QueryProvider";
 
 import localFont from "next/font/local";
 import { ReactNode } from "react";
@@ -24,6 +25,9 @@ const bebasNeue = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_PROD_API_ENDPOINT || "http://localhost:3000"
+  ),
   title: "BookWise | University Library Management",
   description:
     "BookWise is a modern university library management solution for borrowing, tracking, and discovering books. Built for students and staff.",
@@ -83,9 +87,10 @@ const RootLayout = async ({ children }: { children: ReactNode }) => {
           className={`${ibmPlexSans.className} ${bebasNeue.variable} antialiased`}
           suppressHydrationWarning
         >
-          {children}
-
-          <Toaster />
+          <QueryProvider>
+            {children}
+            <Toaster />
+          </QueryProvider>
         </body>
       </SessionProviderWrapper>
     </html>

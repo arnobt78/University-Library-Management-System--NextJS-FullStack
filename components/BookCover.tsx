@@ -48,6 +48,9 @@ const BookCover = ({
             src={coverImage}
             alt="Book cover"
             className="size-full rounded-sm object-fill"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
           />
         ) : coverImage ? (
           <IKImage
@@ -59,8 +62,8 @@ const BookCover = ({
             lqip={{ active: true }}
           />
         ) : (
-          <div className="size-full rounded-sm bg-gray-200 flex items-center justify-center">
-            <span className="text-gray-500 text-sm">No Cover</span>
+          <div className="flex size-full items-center justify-center rounded-sm bg-gray-200">
+            <span className="text-sm text-gray-500">No Cover</span>
           </div>
         )}
       </div>
