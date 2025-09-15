@@ -1,6 +1,6 @@
 import { db } from "@/database/drizzle";
 import { books, users, borrowRecords } from "@/database/schema";
-import { eq, sql, desc, and, gte, lt } from "drizzle-orm";
+import { eq, sql, desc, and, gte, lt, count } from "drizzle-orm";
 
 // Export types
 export type ExportFormat = "csv" | "json" | "pdf";
@@ -355,9 +355,9 @@ export function generateExportFilename(
 // Get export statistics
 export async function getExportStats() {
   const [booksCount, usersCount, borrowsCount] = await Promise.all([
-    db.select({ count: sql<number>`count(*)` }).from(books),
-    db.select({ count: sql<number>`count(*)` }).from(users),
-    db.select({ count: sql<number>`count(*)` }).from(borrowRecords),
+    db.select({ count: count() }).from(books),
+    db.select({ count: count() }).from(users),
+    db.select({ count: count() }).from(borrowRecords),
   ]);
 
   return {

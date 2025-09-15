@@ -18,7 +18,7 @@ const Sidebar = ({ session }: { session: Session }) => {
           <h1>BookWise</h1>
         </Link>
 
-        <div className="mt-10 flex flex-col gap-5">
+        <div className="my-2 flex flex-col gap-2">
           {adminSideBarLinks.map((link) => {
             const isSelected =
               (link.route !== "/admin" &&

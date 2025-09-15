@@ -91,3 +91,29 @@ export const borrowRecords = pgTable("borrow_records", {
   updatedBy: text("updated_by"), // Email for readability
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
+
+// System configuration table for dynamic settings
+export const systemConfig = pgTable("system_config", {
+  id: uuid("id").notNull().primaryKey().defaultRandom().unique(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  updatedBy: text("updated_by"), // Email for readability
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+// Book reviews table for user reviews and ratings
+export const bookReviews = pgTable("book_reviews", {
+  id: uuid("id").notNull().primaryKey().defaultRandom().unique(),
+  bookId: uuid("book_id")
+    .references(() => books.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});

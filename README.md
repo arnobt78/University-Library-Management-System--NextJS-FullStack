@@ -1,4 +1,3 @@
-
 <h2 align="center">A University Library Management System with Admin Panel (Currently under developing right now, soon its coming with its all feature functional)</h2>
 
 ## 📋 <a name="table">Table of Contents</a>
@@ -29,60 +28,59 @@ Built with Next.js, TypeScript, and Postgres, the University Library Management 
 
 ### Features of the University Library Management System Project
 
-👉 **Open-source Authentication**: Personalized onboarding flow with email notifications.  
+👉 **Open-source Authentication**: Personalized onboarding flow with email notifications.
 
-👉 **Home Page**: Highlighted books and newly added books with 3D effects.  
+👉 **Home Page**: Highlighted books and newly added books with 3D effects.
 
-👉 **Library Page**: Advanced filtering, search, and pagination for book discovery.  
+👉 **Library Page**: Advanced filtering, search, and pagination for book discovery.
 
-👉 **Book Detail Pages**: Availability tracking, book summaries, videos, and suggestions for similar books.  
+👉 **Book Detail Pages**: Availability tracking, book summaries, videos, and suggestions for similar books.
 
-👉 **Profile Page**: Manage accounts, track borrowed books, and download receipts.  
+👉 **Profile Page**: Manage accounts, track borrowed books, and download receipts.
 
-👉 **Onboarding Workflows**: Automated welcome emails when users sign up, with follow-ups based on inactivity or activity dates.  
+👉 **Onboarding Workflows**: Automated welcome emails when users sign up, with follow-ups based on inactivity or activity dates.
 
-👉 **Borrow Book Reminder**: Customized email notifications sent before, on, and after the due date, reminding users to return books or avoid charges. 
+👉 **Borrow Book Reminder**: Customized email notifications sent before, on, and after the due date, reminding users to return books or avoid charges.
 
-👉 **Borrow Book Receipt**: Automatically generates a customized PDF receipt when a book is successfully borrowed.  
+👉 **Borrow Book Receipt**: Automatically generates a customized PDF receipt when a book is successfully borrowed.
 
-👉 **Analytics Dashboard**: Statistics, new users, books, borrow requests, and more.  
+👉 **Analytics Dashboard**: Statistics, new users, books, borrow requests, and more.
 
-👉 **All Users Page**: View and manage users, including approving or revoking access.  
+👉 **All Users Page**: View and manage users, including approving or revoking access.
 
-👉 **Account Requests Page**: Admin approval for account requests, with email notifications for user verification.  
+👉 **Account Requests Page**: Admin approval for account requests, with email notifications for user verification.
 
-👉 **All Books Page**: List and manage all library books with advanced search, pagination, and filters. 
+👉 **All Books Page**: List and manage all library books with advanced search, pagination, and filters.
 
-👉 **Book Management Forms**: Add new books and edit existing entries.  
+👉 **Book Management Forms**: Add new books and edit existing entries.
 
-👉 **Book Details Page**: Detailed book information for administrators.  
+👉 **Book Details Page**: Detailed book information for administrators.
 
-👉 **Borrow Records Page**: Complete borrow history with pagination and search.  
+👉 **Borrow Records Page**: Complete borrow history with pagination and search.
 
-👉 **Role Management**: Change user roles to invite more admins, with email notifications sent upon role updates. 
+👉 **Role Management**: Change user roles to invite more admins, with email notifications sent upon role updates.
 
-👉 **Advanced Functionalities**: Caching, rate-limiting, DDoS protection, and custom notifications.  
+👉 **Advanced Functionalities**: Caching, rate-limiting, DDoS protection, and custom notifications.
 
-👉 **Database Management**: Postgres with Neon for scalable and collaborative database handling.  
+👉 **Database Management**: Postgres with Neon for scalable and collaborative database handling.
 
-👉 **Real-time Media Processing**: ImageKit for image and video optimization and transformations. 
+👉 **Real-time Media Processing**: ImageKit for image and video optimization and transformations.
 
-👉 **Efficient Caching**: Upstash Redis for caching, workflows, and triggers.  
+👉 **Efficient Caching**: Upstash Redis for caching, workflows, and triggers.
 
-👉 **Database ORM**: Drizzle ORM for simplified and efficient database interactions.  
+👉 **Database ORM**: Drizzle ORM for simplified and efficient database interactions.
 
-👉 **Modern UI/UX**: Built with TailwindCSS, ShadCN, and other cutting-edge tools.  
+👉 **Modern UI/UX**: Built with TailwindCSS, ShadCN, and other cutting-edge tools.
 
-👉 **Technology Stack**: Next.js with TypeScript for scalable development, and NextAuth for robust authentication.  
+👉 **Technology Stack**: Next.js with TypeScript for scalable development, and NextAuth for robust authentication.
 
-👉 **Seamless Email Handling**: Resend for automated email communications, including notifications and updates.  
+👉 **Seamless Email Handling**: Resend for automated email communications, including notifications and updates.
 
-and many more, including code architecture and reusability 
+and many more, including code architecture and reusability
 
 ## <a name="quick-start">🤸 Quick Start</a>
 
 Follow these steps to set up the project locally on your machine.
-
 
 **Cloning the Repository**
 
@@ -126,7 +124,7 @@ QSTASH_TOKEN=
 RESEND_TOKEN=
 ```
 
-Replace the placeholder values with your actual ImageKit, NeonDB, Upstash, and Resend credentials. You can obtain these credentials by signing up on the [ImageKit](https://bit.ly/49zmXkt), [NeonDB](https://fyi.neon.tech/1jsm), [Upstash](https://upstash.com/?utm_source=jsmastery1), and [Resend](https://resend.com/). 
+Replace the placeholder values with your actual ImageKit, NeonDB, Upstash, and Resend credentials. You can obtain these credentials by signing up on the [ImageKit](https://bit.ly/49zmXkt), [NeonDB](https://fyi.neon.tech/1jsm), [Upstash](https://upstash.com/?utm_source=jsmastery1), and [Resend](https://resend.com/).
 
 **Running the Project**
 
@@ -384,7 +382,7 @@ export default {
     @apply mt-2 text-justify text-xl text-light-100;
   }
 
-  .book-overview_btn {
+  .className="mt-4 min-h-14 w-fit bg-primary text-dark-100 hover:bg-primary/90 max-md:w-full !important" {
     @apply mt-4 min-h-14 w-fit bg-primary text-dark-100 hover:bg-primary/90 max-md:w-full !important;
   }
 
@@ -1247,5 +1245,3 @@ seed();
 ```
 
 </details>
-
-

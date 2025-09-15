@@ -3,6 +3,7 @@ import React from "react";
 import BookCover from "@/components/BookCover";
 import BorrowBook from "@/components/BorrowBook";
 import ReturnBookButton from "@/components/ReturnBookButton";
+import ReviewButton from "@/components/ReviewButton";
 import { db } from "@/database/drizzle";
 import { users, borrowRecords } from "@/database/schema";
 import { eq, count, sql, and, or } from "drizzle-orm";
@@ -287,10 +288,14 @@ const BookOverview = async ({
                 borrowingEligibility={borrowingEligibility}
               />
             )}
+
+            {/* Review Button - only show on detail page */}
+            {isDetailPage && <ReviewButton bookId={id} userId={userId} />}
+
             {!isDetailPage && (
               <a
                 href={`/books/${id}`}
-                className="book-overview_btn flex items-center gap-2 rounded-lg bg-gray-600 px-6 py-3 text-white transition-colors hover:bg-gray-700"
+                className="flex items-center gap-2 rounded-lg bg-gray-600 px-6 py-3 text-white transition-colors hover:bg-gray-700"
               >
                 <img
                   src="/icons/book.svg"

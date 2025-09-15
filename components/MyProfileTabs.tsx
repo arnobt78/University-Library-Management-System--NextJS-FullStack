@@ -57,12 +57,14 @@ interface MyProfileTabsProps {
   activeBorrows: BorrowRecordWithBook[];
   pendingRequests: BorrowRecordWithBook[];
   borrowHistory: BorrowRecordWithBook[];
+  totalReviews: number;
 }
 
 const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
   activeBorrows,
   pendingRequests,
   borrowHistory,
+  totalReviews,
 }) => {
   const router = useRouter();
   const formatDate = (date: Date | null) => {
@@ -357,6 +359,22 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                       <span className="font-medium">View Book Details</span>
                     </button>
                   )}
+
+                  {/* Review This Book Link - only show for RETURNED status */}
+                  {record.status === "RETURNED" && (
+                    <button
+                      onClick={handleViewDetails}
+                      className="flex items-center gap-1 text-sm text-green-600 transition-colors hover:text-green-800"
+                    >
+                      <img
+                        src="/icons/star.svg"
+                        alt="review book"
+                        width={16}
+                        height={16}
+                      />
+                      <span className="font-medium">Review This Book</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -478,7 +496,7 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                       </div>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+                    <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
                       <div className="rounded-lg bg-red-50 p-2 text-center">
                         <p className="text-lg font-bold text-red-600">
                           {borrowHistory.filter((r) => r.fineAmount > 0).length}
@@ -504,6 +522,12 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                         <p className="text-xs text-purple-700">
                           Total Renewals
                         </p>
+                      </div>
+                      <div className="rounded-lg bg-indigo-50 p-2 text-center">
+                        <p className="text-lg font-bold text-indigo-600">
+                          {totalReviews}
+                        </p>
+                        <p className="text-xs text-indigo-700">Total Reviews</p>
                       </div>
                     </div>
                   </CardContent>

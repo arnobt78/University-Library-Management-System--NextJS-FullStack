@@ -1,7 +1,7 @@
 import React from "react";
 import { auth } from "@/auth";
 import { db } from "@/database/drizzle";
-import { borrowRecords, books } from "@/database/schema";
+import { borrowRecords, books, bookReviews } from "@/database/schema";
 import { eq, desc } from "drizzle-orm";
 import MyProfileTabs from "@/components/MyProfileTabs";
 
@@ -11,6 +11,14 @@ const Page = async () => {
   if (!session?.user?.id) {
     return <div>Please sign in to view your profile.</div>;
   }
+
+  // Fetch user's reviews count
+  const userReviews = await db
+    .select()
+    .from(bookReviews)
+    .where(eq(bookReviews.userId, session.user.id));
+
+  const totalReviews = userReviews.length;
 
   // Fetch all borrow records for the current user with book details
   const allBorrowRecords = await db
@@ -94,6 +102,7 @@ const Page = async () => {
       activeBorrows={activeBorrows}
       pendingRequests={pendingRequests}
       borrowHistory={borrowHistory}
+      totalReviews={totalReviews}
     />
   );
 };

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { borrowBook } from "@/lib/actions/book";
+import { BookOpen } from "lucide-react";
 
 interface Props {
   userId: string;
@@ -74,11 +75,11 @@ const BorrowBook = ({
 
   return (
     <Button
-      className="book-overview_btn"
+      className="mt-4 min-h-14 w-fit bg-primary text-dark-100 hover:bg-primary/90 max-md:w-full"
       onClick={handleBorrowBook}
       disabled={borrowing}
     >
-      <img src="/icons/book.svg" alt="book" width={20} height={20} />
+      <BookOpen className="size-5 text-dark-100" />
       <p className="font-bebas-neue text-xl text-dark-100">
         {borrowing ? "Borrowing ..." : "Borrow Book"}
       </p>

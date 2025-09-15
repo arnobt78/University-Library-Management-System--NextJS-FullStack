@@ -2,7 +2,7 @@
 
 import { db } from "@/database/drizzle";
 import { borrowRecords, books, users } from "@/database/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export const getAllBorrowRequests = async () => {
   try {
@@ -135,6 +135,164 @@ export const rejectBorrowRequest = async (recordId: string) => {
     console.error("Error rejecting borrow request:", error);
     return { success: false, error: "Failed to reject borrow request" };
   }
+};
+
+// Update fines for overdue books (without returning them)
+export const updateOverdueFines = async (customFineAmount?: number) => {
+  const today = new Date();
+
+  // Import getDailyFineAmount dynamically to avoid circular dependency
+  const { getDailyFineAmount } = await import("./config");
+  const dailyFineAmount = customFineAmount || (await getDailyFineAmount());
+
+  // Only update fines for overdue books that don't have fines calculated yet
+  // This ensures we don't change existing fine amounts unfairly
+  const overdueRecords = await db
+    .select({
+      id: borrowRecords.id,
+      dueDate: borrowRecords.dueDate,
+      userEmail: users.email,
+      fineAmount: borrowRecords.fineAmount,
+    })
+    .from(borrowRecords)
+    .innerJoin(users, eq(borrowRecords.userId, users.id))
+    .where(
+      and(
+        eq(borrowRecords.status, "BORROWED"),
+        sql`${borrowRecords.dueDate} < ${today}`,
+        // Only update records that don't have fines calculated yet
+        sql`${borrowRecords.fineAmount} IS NULL OR ${borrowRecords.fineAmount} = '0.00'`
+      )
+    );
+
+  const results = [];
+
+  for (const record of overdueRecords) {
+    if (record.dueDate) {
+      const dueDate = new Date(record.dueDate);
+      const daysOverdue = Math.max(
+        0,
+        Math.floor(
+          (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
+      );
+
+      const fineAmount =
+        daysOverdue > 0 ? (daysOverdue * dailyFineAmount).toFixed(2) : "0.00";
+
+      await db
+        .update(borrowRecords)
+        .set({
+          fineAmount: fineAmount,
+          updatedAt: new Date(),
+          updatedBy: record.userEmail,
+        })
+        .where(eq(borrowRecords.id, record.id));
+
+      results.push({
+        recordId: record.id,
+        daysOverdue,
+        fineAmount,
+        updated: true,
+      });
+    }
+  }
+
+  return results;
+};
+
+// Force update fines for ALL overdue books (for testing/admin purposes)
+export const forceUpdateOverdueFines = async (customFineAmount?: number) => {
+  const today = new Date();
+
+  // Import getDailyFineAmount dynamically to avoid circular dependency
+  const { getDailyFineAmount } = await import("./config");
+  const dailyFineAmount = customFineAmount || (await getDailyFineAmount());
+
+  console.log(
+    `Force updating overdue fines with daily amount: $${dailyFineAmount}`
+  );
+
+  // Update ALL overdue books regardless of existing fine amounts
+  const overdueRecords = await db
+    .select({
+      id: borrowRecords.id,
+      dueDate: borrowRecords.dueDate,
+      userEmail: users.email,
+      currentFineAmount: borrowRecords.fineAmount, // Add this to see current value
+    })
+    .from(borrowRecords)
+    .innerJoin(users, eq(borrowRecords.userId, users.id))
+    .where(
+      and(
+        eq(borrowRecords.status, "BORROWED"),
+        sql`${borrowRecords.dueDate} < ${today}`
+      )
+    );
+
+  console.log(`Found ${overdueRecords.length} overdue records to update`);
+
+  const results = [];
+
+  for (const record of overdueRecords) {
+    if (record.dueDate) {
+      const dueDate = new Date(record.dueDate);
+      const daysOverdue = Math.max(
+        0,
+        Math.floor(
+          (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
+      );
+
+      const fineAmount =
+        daysOverdue > 0 ? (daysOverdue * dailyFineAmount).toFixed(2) : "0.00";
+
+      console.log(
+        `Updating record ${record.id}: ${record.currentFineAmount} -> ${fineAmount}`
+      );
+
+      // Use explicit transaction to ensure commit
+      const updateResult = await db
+        .update(borrowRecords)
+        .set({
+          fineAmount: fineAmount,
+          updatedAt: new Date(),
+          updatedBy: record.userEmail,
+        })
+        .where(eq(borrowRecords.id, record.id))
+        .returning({
+          id: borrowRecords.id,
+          fineAmount: borrowRecords.fineAmount,
+        });
+
+      console.log(`Update result for ${record.id}:`, updateResult);
+
+      // Verify the update was successful by reading back from database
+      const verifyResult = await db
+        .select({ id: borrowRecords.id, fineAmount: borrowRecords.fineAmount })
+        .from(borrowRecords)
+        .where(eq(borrowRecords.id, record.id))
+        .limit(1);
+
+      console.log(`Verification for ${record.id}:`, verifyResult);
+
+      results.push({
+        recordId: record.id,
+        daysOverdue,
+        fineAmount,
+        updated: true,
+        previousFineAmount: record.currentFineAmount,
+        verifiedFineAmount: verifyResult[0]?.fineAmount,
+      });
+    }
+  }
+
+  console.log(`Force update completed. Updated ${results.length} records.`);
+
+  // Add a small delay to ensure database consistency
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  return results;
 };
 
 export const returnBook = async (recordId: string) => {

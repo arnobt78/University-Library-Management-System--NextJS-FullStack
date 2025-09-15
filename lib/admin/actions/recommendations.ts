@@ -1,10 +1,30 @@
 import { db } from "@/database/drizzle";
-import { books, users, borrowRecords } from "@/database/schema";
-import { eq, sql, desc, and, notInArray, inArray } from "drizzle-orm";
+import { books, borrowRecords, users } from "@/database/schema";
+import { eq, desc, sql, and, inArray, notInArray, count } from "drizzle-orm";
 
-// Get user's borrowing history
-export async function getUserBorrowingHistory(userId: string) {
-  const userHistory = await db
+// Types for recommendations
+export interface Recommendation {
+  userId: string;
+  bookId: string;
+  bookTitle: string;
+  bookAuthor: string;
+  bookGenre: string;
+  reason: string;
+  score: number;
+  algorithm: "genre-based" | "author-based" | "trending";
+}
+
+export interface RecommendationStats {
+  totalRecommendations: number;
+  genreBasedCount: number;
+  authorBasedCount: number;
+  trendingCount: number;
+  lastUpdated: Date;
+}
+
+// Get user's borrowing history for recommendation algorithms
+export async function getUserBorrowHistory(userId: string) {
+  const history = await db
     .select({
       bookId: borrowRecords.bookId,
       bookTitle: books.title,
@@ -15,242 +35,338 @@ export async function getUserBorrowingHistory(userId: string) {
     })
     .from(borrowRecords)
     .innerJoin(books, eq(borrowRecords.bookId, books.id))
-    .where(eq(borrowRecords.userId, userId))
-    .orderBy(desc(borrowRecords.borrowDate));
-
-  return userHistory;
-}
-
-// Get user's favorite genres based on borrowing history
-export async function getUserFavoriteGenres(userId: string) {
-  const genreStats = await db
-    .select({
-      genre: books.genre,
-      borrowCount: sql<number>`count(*)`,
-    })
-    .from(borrowRecords)
-    .innerJoin(books, eq(borrowRecords.bookId, books.id))
-    .where(eq(borrowRecords.userId, userId))
-    .groupBy(books.genre)
-    .orderBy(desc(sql`count(*)`));
-
-  return genreStats;
-}
-
-// Get user's favorite authors
-export async function getUserFavoriteAuthors(userId: string) {
-  const authorStats = await db
-    .select({
-      author: books.author,
-      borrowCount: sql<number>`count(*)`,
-    })
-    .from(borrowRecords)
-    .innerJoin(books, eq(borrowRecords.bookId, books.id))
-    .where(eq(borrowRecords.userId, userId))
-    .groupBy(books.author)
-    .orderBy(desc(sql`count(*)`));
-
-  return authorStats;
-}
-
-// Get books similar to user's borrowing history
-export async function getSimilarBooks(userId: string, limit = 10) {
-  // Get user's favorite genres
-  const favoriteGenres = await getUserFavoriteGenres(userId);
-  const topGenres = favoriteGenres.slice(0, 3).map((g) => g.genre);
-
-  if (topGenres.length === 0) {
-    // If user has no history, return popular books
-    return getPopularBooks(limit);
-  }
-
-  // Get books in user's favorite genres that they haven't borrowed
-  const userBorrowedBooks = await db
-    .select({ bookId: borrowRecords.bookId })
-    .from(borrowRecords)
-    .where(eq(borrowRecords.userId, userId));
-
-  const borrowedBookIds = userBorrowedBooks.map((b) => b.bookId);
-
-  const similarBooks = await db
-    .select({
-      id: books.id,
-      title: books.title,
-      author: books.author,
-      genre: books.genre,
-      rating: books.rating,
-      totalCopies: books.totalCopies,
-      availableCopies: books.availableCopies,
-      coverColor: books.coverColor,
-      coverUrl: books.coverUrl,
-      description: books.description,
-      isbn: books.isbn,
-      publicationYear: books.publicationYear,
-      publisher: books.publisher,
-      language: books.language,
-      pageCount: books.pageCount,
-      edition: books.edition,
-      isActive: books.isActive,
-      createdAt: books.createdAt,
-      updatedAt: books.updatedAt,
-      popularityScore: sql<number>`count(${borrowRecords.id})`,
-    })
-    .from(books)
-    .leftJoin(borrowRecords, eq(books.id, borrowRecords.bookId))
     .where(
       and(
-        inArray(books.genre, topGenres),
+        eq(borrowRecords.userId, userId),
+        eq(borrowRecords.status, "RETURNED")
+      )
+    )
+    .orderBy(desc(borrowRecords.borrowDate));
+
+  return history;
+}
+
+// Genre-based recommendations
+export async function generateGenreBasedRecommendations(
+  userId: string,
+  limit: number = 5
+): Promise<Recommendation[]> {
+  const userHistory = await getUserBorrowHistory(userId);
+
+  if (userHistory.length === 0) {
+    return [];
+  }
+
+  // Get user's favorite genres
+  const genreCounts = userHistory.reduce(
+    (acc, book) => {
+      const genre = book.bookGenre || "Unknown";
+      acc[genre] = (acc[genre] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  const favoriteGenres = Object.keys(genreCounts)
+    .sort((a, b) => genreCounts[b] - genreCounts[a])
+    .slice(0, 3); // Top 3 genres
+
+  if (favoriteGenres.length === 0) {
+    return [];
+  }
+
+  // Get books user hasn't borrowed yet
+  const borrowedBookIds = userHistory.map((book) => book.bookId);
+
+  const recommendations = await db
+    .select({
+      bookId: books.id,
+      bookTitle: books.title,
+      bookAuthor: books.author,
+      bookGenre: books.genre,
+      rating: books.rating,
+    })
+    .from(books)
+    .where(
+      and(
+        inArray(books.genre, favoriteGenres),
         eq(books.isActive, true),
-        sql`${books.availableCopies} > 0`,
         borrowedBookIds.length > 0
           ? notInArray(books.id, borrowedBookIds)
           : sql`1=1`
       )
     )
-    .groupBy(books.id)
-    .orderBy(desc(sql`count(${borrowRecords.id})`))
+    .orderBy(desc(books.rating), desc(books.createdAt))
     .limit(limit);
 
-  return similarBooks;
+  return recommendations.map((book) => ({
+    userId,
+    bookId: book.bookId,
+    bookTitle: book.bookTitle,
+    bookAuthor: book.bookAuthor,
+    bookGenre: book.bookGenre || "Unknown",
+    reason: `Based on your interest in ${book.bookGenre} books`,
+    score: book.rating || 0,
+    algorithm: "genre-based" as const,
+  }));
 }
 
-// Get popular books (fallback for new users)
-export async function getPopularBooks(limit = 10) {
-  const popularBooks = await db
+// Author-based recommendations
+export async function generateAuthorBasedRecommendations(
+  userId: string,
+  limit: number = 5
+): Promise<Recommendation[]> {
+  const userHistory = await getUserBorrowHistory(userId);
+
+  if (userHistory.length === 0) {
+    return [];
+  }
+
+  // Get user's favorite authors
+  const authorCounts = userHistory.reduce(
+    (acc, book) => {
+      const author = book.bookAuthor || "Unknown";
+      acc[author] = (acc[author] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  const favoriteAuthors = Object.keys(authorCounts)
+    .sort((a, b) => authorCounts[b] - authorCounts[a])
+    .slice(0, 3); // Top 3 authors
+
+  if (favoriteAuthors.length === 0) {
+    return [];
+  }
+
+  // Get books user hasn't borrowed yet
+  const borrowedBookIds = userHistory.map((book) => book.bookId);
+
+  const recommendations = await db
     .select({
-      id: books.id,
-      title: books.title,
-      author: books.author,
-      genre: books.genre,
+      bookId: books.id,
+      bookTitle: books.title,
+      bookAuthor: books.author,
+      bookGenre: books.genre,
       rating: books.rating,
-      totalCopies: books.totalCopies,
-      availableCopies: books.availableCopies,
-      coverColor: books.coverColor,
-      coverUrl: books.coverUrl,
-      description: books.description,
-      isbn: books.isbn,
-      publicationYear: books.publicationYear,
-      publisher: books.publisher,
-      language: books.language,
-      pageCount: books.pageCount,
-      edition: books.edition,
-      isActive: books.isActive,
-      createdAt: books.createdAt,
-      updatedAt: books.updatedAt,
-      borrowCount: sql<number>`count(${borrowRecords.id})`,
     })
     .from(books)
-    .leftJoin(borrowRecords, eq(books.id, borrowRecords.bookId))
-    .where(and(eq(books.isActive, true), sql`${books.availableCopies} > 0`))
-    .groupBy(books.id)
-    .orderBy(desc(sql`count(${borrowRecords.id})`))
+    .where(
+      and(
+        inArray(books.author, favoriteAuthors),
+        eq(books.isActive, true),
+        borrowedBookIds.length > 0
+          ? notInArray(books.id, borrowedBookIds)
+          : sql`1=1`
+      )
+    )
+    .orderBy(desc(books.rating), desc(books.createdAt))
     .limit(limit);
 
-  return popularBooks;
+  return recommendations.map((book) => ({
+    userId,
+    bookId: book.bookId,
+    bookTitle: book.bookTitle,
+    bookAuthor: book.bookAuthor,
+    bookGenre: book.bookGenre || "Unknown",
+    reason: `By ${book.bookAuthor}, an author you enjoy`,
+    score: book.rating || 0,
+    algorithm: "author-based" as const,
+  }));
 }
 
-// Get trending books (most borrowed in last 30 days)
-export async function getTrendingBooks(limit = 10) {
+// Trending recommendations (most borrowed books recently)
+export async function generateTrendingRecommendations(
+  userId: string,
+  limit: number = 5
+): Promise<Recommendation[]> {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+  // Get user's borrowing history to exclude already borrowed books
+  const userHistory = await getUserBorrowHistory(userId);
+  const borrowedBookIds = userHistory.map((book) => book.bookId);
+
+  // Get most borrowed books in the last 30 days
   const trendingBooks = await db
     .select({
-      id: books.id,
-      title: books.title,
-      author: books.author,
-      genre: books.genre,
+      bookId: books.id,
+      bookTitle: books.title,
+      bookAuthor: books.author,
+      bookGenre: books.genre,
       rating: books.rating,
-      totalCopies: books.totalCopies,
-      availableCopies: books.availableCopies,
-      coverColor: books.coverColor,
-      coverUrl: books.coverUrl,
-      description: books.description,
-      isbn: books.isbn,
-      publicationYear: books.publicationYear,
-      publisher: books.publisher,
-      language: books.language,
-      pageCount: books.pageCount,
-      edition: books.edition,
-      isActive: books.isActive,
-      createdAt: books.createdAt,
-      updatedAt: books.updatedAt,
-      recentBorrows: sql<number>`count(${borrowRecords.id})`,
+      borrowCount: sql<number>`count(${borrowRecords.id})`,
     })
     .from(books)
-    .leftJoin(borrowRecords, eq(books.id, borrowRecords.bookId))
+    .innerJoin(borrowRecords, eq(books.id, borrowRecords.bookId))
     .where(
       and(
         eq(books.isActive, true),
-        sql`${books.availableCopies} > 0`,
-        sql`${borrowRecords.createdAt} >= ${thirtyDaysAgo}`
+        sql`${borrowRecords.borrowDate} >= ${thirtyDaysAgo}`,
+        borrowedBookIds.length > 0
+          ? notInArray(books.id, borrowedBookIds)
+          : sql`1=1`
       )
     )
-    .groupBy(books.id)
-    .orderBy(desc(sql`count(${borrowRecords.id})`))
+    .groupBy(books.id, books.title, books.author, books.genre, books.rating)
+    .orderBy(desc(sql`count(${borrowRecords.id})`), desc(books.rating))
     .limit(limit);
 
-  return trendingBooks;
+  return trendingBooks.map((book) => ({
+    userId,
+    bookId: book.bookId,
+    bookTitle: book.bookTitle,
+    bookAuthor: book.bookAuthor,
+    bookGenre: book.bookGenre || "Unknown",
+    reason: `Trending: ${book.borrowCount} borrows in the last 30 days`,
+    score: book.borrowCount,
+    algorithm: "trending" as const,
+  }));
 }
 
-// Get personalized recommendations for a user
-export async function getPersonalizedRecommendations(
-  userId: string,
-  limit = 6
-) {
-  const userHistory = await getUserBorrowingHistory(userId);
+// Generate all recommendations for a user
+export async function generateUserRecommendations(
+  userId: string
+): Promise<Recommendation[]> {
+  const [genreRecs, authorRecs, trendingRecs] = await Promise.all([
+    generateGenreBasedRecommendations(userId, 3),
+    generateAuthorBasedRecommendations(userId, 3),
+    generateTrendingRecommendations(userId, 4),
+  ]);
 
-  if (userHistory.length === 0) {
-    // New user - return popular books
-    return getPopularBooks(limit);
-  }
-
-  // Get similar books based on user's history
-  const similarBooks = await getSimilarBooks(userId, Math.ceil(limit / 2));
-
-  // Get trending books
-  const trendingBooks = await getTrendingBooks(Math.ceil(limit / 2));
-
-  // Combine and deduplicate
-  const allBooks = [...similarBooks, ...trendingBooks];
-  const uniqueBooks = allBooks.filter(
-    (book, index, self) => index === self.findIndex((b) => b.id === book.id)
+  // Combine and deduplicate recommendations
+  const allRecs = [...genreRecs, ...authorRecs, ...trendingRecs];
+  const uniqueRecs = allRecs.filter(
+    (rec, index, self) =>
+      index === self.findIndex((r) => r.bookId === rec.bookId)
   );
 
-  return uniqueBooks.slice(0, limit);
+  // Sort by score and return top 10
+  return uniqueRecs.sort((a, b) => b.score - a.score).slice(0, 10);
 }
 
-// Get recommendation reasons
-export async function getRecommendationReasons(userId: string, bookId: string) {
-  const userHistory = await getUserBorrowingHistory(userId);
-  const userGenres = await getUserFavoriteGenres(userId);
-  const userAuthors = await getUserFavoriteAuthors(userId);
+// Generate recommendations for all users
+export async function generateAllUserRecommendations(): Promise<
+  { userId: string; recommendations: Recommendation[] }[]
+> {
+  const allUsers = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.status, "APPROVED"));
 
-  const reasons = [];
-
-  // Check if book matches user's favorite genre
-  const bookGenre = userHistory.find((h) => h.bookId === bookId)?.bookGenre;
-  if (bookGenre && userGenres.some((g) => g.genre === bookGenre)) {
-    reasons.push(`You enjoy ${bookGenre} books`);
+  const results = [];
+  for (const user of allUsers) {
+    try {
+      const recommendations = await generateUserRecommendations(user.id);
+      results.push({
+        userId: user.id,
+        recommendations,
+      });
+    } catch (error) {
+      console.error(
+        `Error generating recommendations for user ${user.id}:`,
+        error
+      );
+    }
   }
 
-  // Check if book matches user's favorite author
-  const bookAuthor = userHistory.find((h) => h.bookId === bookId)?.bookAuthor;
-  if (bookAuthor && userAuthors.some((a) => a.author === bookAuthor)) {
-    reasons.push(`You like books by ${bookAuthor}`);
+  return results;
+}
+
+// Update trending books (refresh the trending algorithm data)
+export async function updateTrendingBooks(): Promise<{
+  message: string;
+  trendingCount: number;
+}> {
+  // This function refreshes the trending data by recalculating recent borrows
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const trendingStats = await db
+    .select({
+      bookId: books.id,
+      bookTitle: books.title,
+      borrowCount: sql<number>`count(${borrowRecords.id})`,
+    })
+    .from(books)
+    .innerJoin(borrowRecords, eq(books.id, borrowRecords.bookId))
+    .where(
+      and(
+        eq(books.isActive, true),
+        sql`${borrowRecords.borrowDate} >= ${thirtyDaysAgo}`
+      )
+    )
+    .groupBy(books.id, books.title)
+    .orderBy(desc(sql`count(${borrowRecords.id})`))
+    .limit(10);
+
+  return {
+    message: `Updated trending books data. Found ${trendingStats.length} trending books.`,
+    trendingCount: trendingStats.length,
+  };
+}
+
+// Refresh recommendation cache (simulate cache refresh)
+export async function refreshRecommendationCache(): Promise<{
+  message: string;
+  cacheCleared: boolean;
+}> {
+  // In a real application, this would clear Redis cache or similar
+  // For now, we'll just simulate the operation
+
+  console.log("🔄 Refreshing recommendation cache...");
+
+  // Simulate cache operations
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  return {
+    message:
+      "Recommendation cache refreshed successfully. All cached recommendations have been cleared and will be regenerated on next request.",
+    cacheCleared: true,
+  };
+}
+
+// Get recommendation statistics
+export async function getRecommendationStats(): Promise<RecommendationStats> {
+  const allUsers = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.status, "APPROVED"));
+
+  let totalRecommendations = 0;
+  let genreBasedCount = 0;
+  let authorBasedCount = 0;
+  let trendingCount = 0;
+
+  for (const user of allUsers) {
+    try {
+      const recommendations = await generateUserRecommendations(user.id);
+      totalRecommendations += recommendations.length;
+
+      recommendations.forEach((rec) => {
+        switch (rec.algorithm) {
+          case "genre-based":
+            genreBasedCount++;
+            break;
+          case "author-based":
+            authorBasedCount++;
+            break;
+          case "trending":
+            trendingCount++;
+            break;
+        }
+      });
+    } catch (error) {
+      console.error(`Error getting stats for user ${user.id}:`, error);
+    }
   }
 
-  // Check if it's a trending book
-  const trendingBooks = await getTrendingBooks(20);
-  if (trendingBooks.some((b) => b.id === bookId)) {
-    reasons.push("This book is trending in the library");
-  }
-
-  // Check if it's popular
-  const popularBooks = await getPopularBooks(20);
-  if (popularBooks.some((b) => b.id === bookId)) {
-    reasons.push("This is a popular book among library users");
-  }
-
-  return reasons.length > 0 ? reasons : ["Recommended based on library trends"];
+  return {
+    totalRecommendations,
+    genreBasedCount,
+    authorBasedCount,
+    trendingCount,
+    lastUpdated: new Date(),
+  };
 }

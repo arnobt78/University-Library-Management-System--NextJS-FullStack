@@ -58,7 +58,8 @@ const ReturnBookButton = ({ recordId, bookTitle, dueDate }: Props) => {
 
   return (
     <Button
-      className={`book-overview_btn ${isOverdue ? "bg-red-600 hover:bg-red-700" : "bg-orange-600 hover:bg-orange-700"}`}
+      // eslint-disable-next-line tailwindcss/no-custom-classname
+      className={`!important" mt-4 min-h-14 w-fit bg-primary text-dark-100 hover:bg-primary/90 max-md:w-full ${isOverdue ? "bg-red-600 hover:bg-red-700" : "bg-orange-600 hover:bg-orange-700"}`}
       onClick={handleReturnBook}
       disabled={returning}
     >

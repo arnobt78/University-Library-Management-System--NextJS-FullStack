@@ -134,7 +134,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ data }) => {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="text-2xl">📚</div>
             </div>
             <div className="ml-4">
@@ -150,7 +150,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ data }) => {
 
         <div className="rounded-lg border border-green-200 bg-green-50 p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="text-2xl">👥</div>
             </div>
             <div className="ml-4">
@@ -166,7 +166,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ data }) => {
 
         <div className="rounded-lg border border-purple-200 bg-purple-50 p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="text-2xl">📖</div>
             </div>
             <div className="ml-4">
@@ -182,7 +182,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ data }) => {
 
         <div className="rounded-lg border border-orange-200 bg-orange-50 p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="text-2xl">⚠️</div>
             </div>
             <div className="ml-4">
@@ -389,7 +389,9 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ data }) => {
             <div className="flex justify-between">
               <span className="text-gray-600">Avg Days Overdue:</span>
               <span className="font-medium">
-                {data.overdueStats?.avgDaysOverdue?.toFixed(1) || 0}
+                {typeof data.overdueStats?.avgDaysOverdue === "number"
+                  ? data.overdueStats.avgDaysOverdue.toFixed(1)
+                  : 0}
               </span>
             </div>
             <div className="flex justify-between">

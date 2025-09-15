@@ -84,6 +84,10 @@ export async function getUserActivityPatterns() {
 export async function getOverdueAnalysis() {
   const now = new Date();
 
+  // Get current daily fine amount from system config
+  const { getDailyFineAmount } = await import("./config");
+  const dailyFineAmount = await getDailyFineAmount();
+
   const overdueBooks = await db
     .select({
       recordId: borrowRecords.id,
@@ -98,7 +102,11 @@ export async function getOverdueAnalysis() {
         THEN (${now}::date - ${borrowRecords.dueDate}::date)
         ELSE 0 
       END`,
-      fineAmount: borrowRecords.fineAmount,
+      fineAmount: sql<string>`CASE 
+        WHEN ${borrowRecords.dueDate} IS NOT NULL AND ${borrowRecords.dueDate} < ${now}
+        THEN ((${now}::date - ${borrowRecords.dueDate}::date) * ${dailyFineAmount})::text
+        ELSE '0.00'
+      END`,
     })
     .from(borrowRecords)
     .innerJoin(books, eq(borrowRecords.bookId, books.id))
@@ -118,15 +126,23 @@ export async function getOverdueAnalysis() {
 export async function getOverdueStats() {
   const now = new Date();
 
+  // Get current daily fine amount from system config
+  const { getDailyFineAmount } = await import("./config");
+  const dailyFineAmount = await getDailyFineAmount();
+
   const stats = await db
     .select({
       totalOverdue: sql<number>`count(case when ${borrowRecords.dueDate} < ${now} and ${borrowRecords.status} = 'BORROWED' then 1 end)`,
-      totalFines: sql<number>`COALESCE(sum(case when ${borrowRecords.dueDate} < ${now} and ${borrowRecords.status} = 'BORROWED' then ${borrowRecords.fineAmount} end), 0)`,
-      avgDaysOverdue: sql<number>`AVG(case when ${borrowRecords.dueDate} < ${now} and ${borrowRecords.status} = 'BORROWED' then (${now}::date - ${borrowRecords.dueDate}::date) end)`,
+      totalFines: sql<number>`COALESCE(sum(case when ${borrowRecords.dueDate} < ${now} and ${borrowRecords.status} = 'BORROWED' then ((${now}::date - ${borrowRecords.dueDate}::date) * ${dailyFineAmount}) end), 0)`,
+      avgDaysOverdue: sql<number>`COALESCE(AVG(case when ${borrowRecords.dueDate} < ${now} and ${borrowRecords.status} = 'BORROWED' then (${now}::date - ${borrowRecords.dueDate}::date) end), 0)`,
     })
     .from(borrowRecords);
 
-  return stats[0];
+  return {
+    totalOverdue: stats[0]?.totalOverdue || 0,
+    totalFines: stats[0]?.totalFines || 0,
+    avgDaysOverdue: Number(stats[0]?.avgDaysOverdue) || 0,
+  };
 }
 
 // Get monthly borrowing statistics
