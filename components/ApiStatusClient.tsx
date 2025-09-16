@@ -15,18 +15,16 @@ import {
   Zap,
   Activity,
   TrendingUp,
+  Database,
+  FileText,
+  Lock,
+  Wifi,
+  Globe,
 } from "lucide-react";
-
-interface ServiceStatus {
-  name: string;
-  status: "HEALTHY" | "DEGRADED" | "DOWN";
-  responseTime: number;
-  endpoint: string;
-  description: string;
-  icon: React.ReactNode;
-  performance: "Excellent" | "Good" | "Slow" | "Poor";
-  performanceValue: number;
-}
+import {
+  fetchAllServicesHealth,
+  ServiceStatus,
+} from "@/lib/services/health-monitor";
 
 interface SystemMetric {
   title: string;
@@ -41,13 +39,19 @@ interface ApiStatusClientProps {
   systemMetrics: SystemMetric[];
 }
 
-const ApiStatusClient = ({ services, systemMetrics }: ApiStatusClientProps) => {
+const ApiStatusClient = ({
+  services: initialServices,
+  systemMetrics,
+}: ApiStatusClientProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
-  const [overallStatus] = useState<"HEALTHY" | "DEGRADED" | "DOWN">("HEALTHY");
+  const [overallStatus, setOverallStatus] = useState<
+    "HEALTHY" | "DEGRADED" | "DOWN"
+  >("HEALTHY");
   const [responseTime, setResponseTime] = useState(0);
-  const [uptime, setUptime] = useState({ hours: 0, minutes: 0 });
+  const [uptime, setUptime] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [healthScore, setHealthScore] = useState(100);
+  const [services, setServices] = useState<ServiceStatus[]>(initialServices);
 
   // Utility functions
   const getStatusColor = (status: string) => {
@@ -104,36 +108,148 @@ const ApiStatusClient = ({ services, systemMetrics }: ApiStatusClientProps) => {
     }
   };
 
-  // Initialize date on client side and simulate real-time data updates
+  // Get service icon
+  const getServiceIcon = (serviceName: string) => {
+    switch (serviceName) {
+      case "API Server":
+        return <Server className="size-5" />;
+      case "Database":
+        return <Database className="size-5" />;
+      case "File Storage":
+        return <FileText className="size-5" />;
+      case "Authentication":
+        return <Lock className="size-5" />;
+      case "Email Service":
+        return <Wifi className="size-5" />;
+      case "External APIs":
+        return <Globe className="size-5" />;
+      default:
+        return <Activity className="size-5" />;
+    }
+  };
+
+  // Fetch real service data and initialize monitoring
   useEffect(() => {
     // Initialize the date on client side to avoid hydration mismatch
     setLastChecked(new Date());
 
-    const interval = setInterval(() => {
-      // Simulate response time changes
-      setResponseTime(Math.floor(Math.random() * 100) + 10);
+    // Fetch real service health data
+    const fetchServices = async () => {
+      try {
+        const realServices = await fetchAllServicesHealth();
 
-      // Simulate uptime increment
-      setUptime((prev) => {
-        const newMinutes = prev.minutes + 1;
-        if (newMinutes >= 60) {
-          return { hours: prev.hours + 1, minutes: 0 };
+        // Add icons to services
+        const servicesWithIcons = realServices.map((service) => ({
+          ...service,
+          icon: getServiceIcon(service.name),
+        }));
+
+        setServices(servicesWithIcons);
+
+        // Calculate overall status based on service health
+        const healthyServices = servicesWithIcons.filter(
+          (s) => s.status === "HEALTHY"
+        ).length;
+        const totalServices = servicesWithIcons.length;
+
+        if (healthyServices === totalServices) {
+          setOverallStatus("HEALTHY");
+        } else if (healthyServices > totalServices / 2) {
+          setOverallStatus("DEGRADED");
+        } else {
+          setOverallStatus("DOWN");
         }
-        return { hours: prev.hours, minutes: newMinutes };
-      });
 
-      // Simulate health score fluctuation
-      setHealthScore((prev) =>
-        Math.max(85, Math.min(100, prev + (Math.random() - 0.5) * 2))
-      );
+        // Calculate average response time
+        const avgResponseTime =
+          servicesWithIcons.reduce((sum, s) => sum + s.responseTime, 0) /
+          totalServices;
+        setResponseTime(Math.round(avgResponseTime));
+
+        // Calculate health score based on service performance
+        const avgPerformance =
+          servicesWithIcons.reduce((sum, s) => sum + s.performanceValue, 0) /
+          totalServices;
+        setHealthScore(Math.round(avgPerformance));
+      } catch (error) {
+        console.error("Failed to fetch service health:", error);
+      }
+    };
+
+    fetchServices();
+
+    // Update uptime every second
+    const uptimeInterval = setInterval(() => {
+      setUptime((prev) => {
+        let newSeconds = prev.seconds + 1;
+        let newMinutes = prev.minutes;
+        let newHours = prev.hours;
+
+        if (newSeconds >= 60) {
+          newSeconds = 0;
+          newMinutes += 1;
+        }
+        if (newMinutes >= 60) {
+          newMinutes = 0;
+          newHours += 1;
+        }
+
+        return { hours: newHours, minutes: newMinutes, seconds: newSeconds };
+      });
     }, 1000);
 
-    return () => clearInterval(interval);
+    // Refresh service data every 30 seconds
+    const refreshInterval = setInterval(fetchServices, 30000);
+
+    return () => {
+      clearInterval(uptimeInterval);
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     setLastChecked(new Date());
+
+    try {
+      const realServices = await fetchAllServicesHealth();
+
+      // Add icons to services
+      const servicesWithIcons = realServices.map((service) => ({
+        ...service,
+        icon: getServiceIcon(service.name),
+      }));
+
+      setServices(servicesWithIcons);
+
+      // Calculate overall status based on service health
+      const healthyServices = servicesWithIcons.filter(
+        (s) => s.status === "HEALTHY"
+      ).length;
+      const totalServices = servicesWithIcons.length;
+
+      if (healthyServices === totalServices) {
+        setOverallStatus("HEALTHY");
+      } else if (healthyServices > totalServices / 2) {
+        setOverallStatus("DEGRADED");
+      } else {
+        setOverallStatus("DOWN");
+      }
+
+      // Calculate average response time
+      const avgResponseTime =
+        servicesWithIcons.reduce((sum, s) => sum + s.responseTime, 0) /
+        totalServices;
+      setResponseTime(Math.round(avgResponseTime));
+
+      // Calculate health score based on service performance
+      const avgPerformance =
+        servicesWithIcons.reduce((sum, s) => sum + s.performanceValue, 0) /
+        totalServices;
+      setHealthScore(Math.round(avgPerformance));
+    } catch (error) {
+      console.error("Failed to refresh service health:", error);
+    }
 
     // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -199,7 +315,7 @@ const ApiStatusClient = ({ services, systemMetrics }: ApiStatusClientProps) => {
               </div>
               <p className="text-sm text-gray-600">Uptime</p>
               <p className="text-2xl font-bold">
-                {uptime.hours}h {uptime.minutes}m
+                {uptime.hours}h {uptime.minutes}m {uptime.seconds}s
               </p>
             </div>
             <div className="text-center">
