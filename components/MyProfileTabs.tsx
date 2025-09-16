@@ -6,6 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BookCover from "@/components/BookCover";
 import CountdownTimer from "@/components/CountdownTimer";
+import {
+  BookOpen,
+  Clock,
+  Calendar,
+  AlertTriangle,
+  Star,
+  Eye,
+  RotateCcw,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { returnBook } from "@/lib/admin/actions/borrow";
 import { showToast } from "@/lib/toast";
@@ -83,7 +92,14 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
       case "BORROWED":
         return <Badge variant="default">Currently Borrowed</Badge>;
       case "RETURNED":
-        return <Badge variant="outline">Returned</Badge>;
+        return (
+          <Badge
+            variant="default"
+            className="bg-green-600 text-white hover:bg-green-700"
+          >
+            Book Returned
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -136,14 +152,35 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
             (1000 * 60 * 60 * 24)
         )
       : 0;
+    const daysRemaining =
+      record.status === "BORROWED" && record.dueDate && !isOverdue
+        ? Math.ceil(
+            (new Date(record.dueDate).getTime() - today.getTime()) /
+              (1000 * 60 * 60 * 24)
+          )
+        : 0;
     const calculatedFine = isOverdue ? daysOverdue * 1.0 : 0;
 
     return (
-      <Card className="mb-4">
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-            {/* Full-height Book Cover */}
-            <div className="shrink-0">
+      <Card
+        className={`mb-3 border-2 transition-all duration-300 hover:shadow-lg ${
+          record.status === "PENDING"
+            ? "border-gray-500 bg-gray-800/20"
+            : record.status === "BORROWED" && isOverdue
+              ? "border-red-600 bg-red-900/10"
+              : record.status === "BORROWED" && daysRemaining <= 2 && !isOverdue
+                ? "border-orange-400 bg-orange-900/10"
+                : record.status === "BORROWED"
+                  ? "border-blue-500 bg-blue-900/10"
+                  : record.status === "RETURNED"
+                    ? "border-green-500 bg-green-900/10"
+                    : "border-gray-600 bg-gray-800/30"
+        }`}
+      >
+        <CardContent className="p-3">
+          <div className="flex gap-3">
+            {/* Full Height Book Cover */}
+            <div className="relative w-48 shrink-0">
               <BookCover
                 variant="regular"
                 coverColor={record.book.coverColor}
@@ -154,228 +191,197 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
 
             {/* Main Content */}
             <div className="min-w-0 flex-1">
-              {/* Header Row: Title and Status */}
-              <div className="mb-3 flex items-start justify-between">
+              {/* Header with Status Badge */}
+              <div className="mb-2 flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {record.book.title}
-                    </h3>
-                    {/* Overdue Warning */}
-                    {isOverdue && (
-                      <Badge variant="destructive" className="text-xs">
-                        OVERDUE ({daysOverdue} days)
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="text-xl font-semibold text-light-100">
+                    {record.book.title}
+                  </h3>
+                  <p className="text-base text-light-200/70">
                     by {record.book.author}
                   </p>
                 </div>
-                <div className="ml-4 shrink-0">
+                {/* Status Badge in Top Right */}
+                <div className="ml-2 shrink-0">
                   {getStatusBadge(record.status)}
                 </div>
               </div>
 
-              {/* Second Row: Category and Rating */}
-              <div className="mb-3 flex items-center gap-4">
-                <Badge variant="outline" className="px-2 py-1 text-sm">
+              {/* Genre and Rating */}
+              <div className="mb-2 flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="px-2 py-0.5 text-sm text-light-100"
+                >
                   {record.book.genre}
                 </Badge>
                 <div className="flex items-center gap-1">
-                  <img
-                    src="/icons/star.svg"
-                    alt="rating"
-                    width={16}
-                    height={16}
-                  />
-                  <span className="text-sm text-gray-600">
+                  <Star className="size-4 fill-current text-yellow-400" />
+                  <span className="text-sm text-yellow-400">
                     {record.book.rating}
                   </span>
                 </div>
               </div>
 
-              {/* Third Row: Borrow Dates and Status */}
-              <div className="mb-3 grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">Borrowed</span>
-                  <p className="text-gray-600">
+              {/* Compact Information */}
+              <div className="mb-2 flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <Calendar className="size-4 text-blue-400" />
+                  <span className="font-medium text-light-100">Borrowed:</span>
+                  <span className="text-light-200/70">
                     {formatDate(record.borrowDate)}
-                  </p>
+                  </span>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-700">Due</span>
-                  <p className="text-gray-600">
+                <div className="flex items-center gap-1">
+                  <Clock className="size-4 text-purple-400" />
+                  <span className="font-medium text-light-100">Due:</span>
+                  <span className="text-light-200/70">
                     {record.dueDate ? formatDate(record.dueDate) : "Not set"}
-                  </p>
+                  </span>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-700">Status</span>
-                  <p className="text-gray-600">
-                    {record.status === "RETURNED" && record.returnDate
-                      ? formatDate(record.returnDate)
-                      : record.status === "PENDING"
-                        ? "Awaiting"
-                        : "Active"}
-                  </p>
-                </div>
+                {record.book.isbn && (
+                  <div className="flex items-center gap-1">
+                    <BookOpen className="size-4 text-green-400" />
+                    <span className="font-medium text-light-100">ISBN:</span>
+                    <span className="font-mono text-light-200/70">
+                      {record.book.isbn.slice(-4)}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* Fourth Row: ISBN and Countdown */}
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  {record.book.isbn && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium text-gray-700">
-                        ISBN:
-                      </span>
-                      <span className="font-mono text-sm text-gray-600">
-                        {record.book.isbn.slice(-4)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Countdown Timer - only show for BORROWED status with dueDate */}
-                {showCountdown &&
-                  record.status === "BORROWED" &&
-                  record.dueDate && (
-                    <div className="shrink-0">
-                      <CountdownTimer
-                        dueDate={record.dueDate}
-                        borrowDate={record.borrowDate}
-                      />
-                    </div>
-                  )}
-              </div>
-
-              {/* Additional Info Row */}
-              <div className="flex items-center justify-between">
-                {/* Status-specific compact info - only show helpful context, not redundant info */}
-                {record.status === "PENDING" && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <img
-                      src="/icons/clock.svg"
-                      alt="pending"
-                      width={16}
-                      height={16}
+              {/* Countdown Timer */}
+              {showCountdown &&
+                record.status === "BORROWED" &&
+                record.dueDate && (
+                  <div className="mb-2">
+                    <CountdownTimer
+                      dueDate={record.dueDate}
+                      borrowDate={record.borrowDate}
                     />
-                    <span className="text-yellow-700">
+                  </div>
+                )}
+
+              {/* Enhanced Status Messages */}
+              <div className="mb-2">
+                {record.status === "PENDING" && (
+                  <div className="flex items-center gap-2 rounded bg-yellow-500/10 px-2 py-1">
+                    <Clock className="size-4 text-yellow-400" />
+                    <span className="text-sm text-yellow-400">
                       Awaiting admin approval
                     </span>
                   </div>
                 )}
 
-                {showCountdown &&
-                  record.status === "BORROWED" &&
-                  record.dueDate && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <img
-                        src="/icons/book.svg"
-                        alt="borrowed"
-                        width={16}
-                        height={16}
-                      />
-                      <span
-                        className={isOverdue ? "text-red-700" : "text-blue-700"}
-                      >
-                        {isOverdue
-                          ? `OVERDUE! Please return immediately (${daysOverdue} days late)`
-                          : `Currently borrowed, please return on ${formatDate(record.dueDate)}`}
-                      </span>
-                    </div>
-                  )}
-
-                {record.status === "RETURNED" && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <img
-                      src="/icons/calendar.svg"
-                      alt="returned"
-                      width={16}
-                      height={16}
-                    />
-                    <span className="text-green-700">
-                      Successfully returned
+                {record.status === "BORROWED" && record.dueDate && (
+                  <div
+                    className={`flex items-center gap-2 rounded px-2 py-1 ${
+                      isOverdue
+                        ? "bg-red-500/10"
+                        : daysRemaining <= 2
+                          ? "bg-orange-500/10"
+                          : "bg-blue-500/10"
+                    }`}
+                  >
+                    {isOverdue ? (
+                      <AlertTriangle className="size-4 text-red-400" />
+                    ) : daysRemaining <= 2 ? (
+                      <AlertTriangle className="size-4 text-orange-600" />
+                    ) : (
+                      <BookOpen className="size-4 text-blue-400" />
+                    )}
+                    <span
+                      className={`text-sm ${
+                        isOverdue
+                          ? "text-red-400"
+                          : daysRemaining <= 2
+                            ? "text-orange-600"
+                            : "text-blue-400"
+                      }`}
+                    >
+                      {isOverdue
+                        ? `OVERDUE! ${daysOverdue} days late`
+                        : daysRemaining <= 2
+                          ? `Due Soon! ${daysRemaining} day${daysRemaining === 1 ? "" : "s"} left`
+                          : `Due on ${formatDate(record.dueDate)}`}
                     </span>
                   </div>
                 )}
 
-                <div className="flex items-center gap-4">
-                  {/* Show existing fine or calculated overdue fine */}
-                  {(record.fineAmount > 0 || calculatedFine > 0) && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium text-red-600">
-                        $
-                        {(record.fineAmount > 0
-                          ? record.fineAmount
-                          : calculatedFine
-                        ).toFixed(2)}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {isOverdue ? "overdue fine" : "fine"}
-                      </span>
-                    </div>
-                  )}
-                  {record.renewalCount > 0 && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium text-purple-600">
-                        {record.renewalCount}
-                      </span>
-                      <span className="text-sm text-gray-500">renewals</span>
-                    </div>
-                  )}
-                </div>
+                {record.status === "RETURNED" && (
+                  <div className="flex items-center gap-2 rounded bg-green-500/10 px-2 py-1">
+                    <Calendar className="size-4 text-green-600" />
+                    <span className="text-sm text-green-600">
+                      Successfully returned
+                    </span>
+                  </div>
+                )}
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-3">
-                  {/* Return Book Button - only show for BORROWED status */}
-                  {record.status === "BORROWED" && (
-                    <button
-                      onClick={handleReturnBook}
-                      className="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-red-700"
-                    >
-                      <img
-                        src="/icons/book.svg"
-                        alt="return book"
-                        width={16}
-                        height={16}
-                      />
-                      <span className="font-medium">Return Book</span>
-                    </button>
-                  )}
+              {/* Fine and Renewal Info */}
+              <div className="mb-2 flex flex-wrap gap-2">
+                {(record.fineAmount > 0 || calculatedFine > 0) && (
+                  <div className="flex items-center gap-1 rounded bg-red-500/10 px-2 py-1">
+                    <AlertTriangle className="size-4 text-red-400" />
+                    <span className="text-sm font-medium text-red-400">
+                      $
+                      {(record.fineAmount > 0
+                        ? record.fineAmount
+                        : calculatedFine
+                      ).toFixed(2)}
+                    </span>
+                    <span className="text-sm text-red-300/70">
+                      {isOverdue ? "overdue fine" : "fine"}
+                    </span>
+                  </div>
+                )}
 
-                  {/* View Book Details Link - hide for RETURNED status */}
-                  {record.status !== "RETURNED" && (
-                    <button
-                      onClick={handleViewDetails}
-                      className="flex items-center gap-1 text-sm text-blue-600 transition-colors hover:text-blue-800"
-                    >
-                      <img
-                        src="/icons/book.svg"
-                        alt="view details"
-                        width={16}
-                        height={16}
-                      />
-                      <span className="font-medium">View Book Details</span>
-                    </button>
-                  )}
+                {record.renewalCount > 0 && (
+                  <div className="flex items-center gap-1 rounded bg-purple-500/10 px-2 py-1">
+                    <RotateCcw className="size-4 text-purple-400" />
+                    <span className="text-sm font-medium text-purple-400">
+                      {record.renewalCount}
+                    </span>
+                    <span className="text-sm text-purple-300/70">renewals</span>
+                  </div>
+                )}
+              </div>
 
-                  {/* Review This Book Link - only show for RETURNED status */}
-                  {record.status === "RETURNED" && (
-                    <button
-                      onClick={handleViewDetails}
-                      className="flex items-center gap-1 text-sm text-green-600 transition-colors hover:text-green-800"
-                    >
-                      <img
-                        src="/icons/star.svg"
-                        alt="review book"
-                        width={16}
-                        height={16}
-                      />
-                      <span className="font-medium">Review This Book</span>
-                    </button>
-                  )}
-                </div>
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {record.status === "BORROWED" && (
+                  <button
+                    onClick={handleReturnBook}
+                    className={`flex items-center gap-1 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+                      isOverdue
+                        ? "bg-red-600 text-white hover:bg-red-700"
+                        : "bg-orange-600 text-white hover:bg-orange-700"
+                    }`}
+                  >
+                    <RotateCcw className="size-4" />
+                    <span>Return Book</span>
+                  </button>
+                )}
+
+                {record.status !== "RETURNED" && (
+                  <button
+                    onClick={handleViewDetails}
+                    className="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                  >
+                    <Eye className="size-4" />
+                    <span>View Details</span>
+                  </button>
+                )}
+
+                {record.status === "RETURNED" && (
+                  <button
+                    onClick={handleViewDetails}
+                    className="flex items-center gap-1 rounded bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                  >
+                    <Star className="size-4" />
+                    <span>Review Book</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -391,25 +397,36 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
       </h1>
 
       <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="active">
+        <TabsList className="grid h-auto w-full grid-cols-3 border-2 border-gray-600 bg-gray-800/30 p-0">
+          <TabsTrigger
+            value="active"
+            className="rounded-none border-b-2 border-gray-600 px-4 py-3 text-light-100 data-[state=active]:border-b-0 data-[state=active]:bg-white data-[state=active]:text-dark-100"
+          >
             Active Borrows ({activeBorrows.length})
           </TabsTrigger>
-          <TabsTrigger value="pending">
+          <TabsTrigger
+            value="pending"
+            className="rounded-none border-b-2 border-gray-600 px-4 py-3 text-light-100 data-[state=active]:border-b-0 data-[state=active]:bg-white data-[state=active]:text-dark-100"
+          >
             Pending Requests ({pendingRequests.length})
           </TabsTrigger>
-          <TabsTrigger value="history">
+          <TabsTrigger
+            value="history"
+            className="rounded-none border-b-2 border-gray-600 px-4 py-3 text-light-100 data-[state=active]:border-b-0 data-[state=active]:bg-white data-[state=active]:text-dark-100"
+          >
             Borrow History ({borrowHistory.length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="active" className="mt-0">
+        <TabsContent value="active" className="mt-2">
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Currently Borrowed Books</h2>
+            <h2 className="text-xl font-semibold text-light-100">
+              Currently Borrowed Books
+            </h2>
             {activeBorrows.length === 0 ? (
-              <Card>
+              <Card className="border-2 border-gray-600 bg-gray-800/30">
                 <CardContent className="p-6 text-center">
-                  <p className="text-gray-500">No active borrows</p>
+                  <p className="text-light-200/70">No active borrows</p>
                 </CardContent>
               </Card>
             ) : (
@@ -424,13 +441,15 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
           </div>
         </TabsContent>
 
-        <TabsContent value="pending" className="mt-0">
+        <TabsContent value="pending" className="mt-2">
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Pending Approval</h2>
+            <h2 className="text-xl font-semibold text-light-100">
+              Pending Approval
+            </h2>
             {pendingRequests.length === 0 ? (
-              <Card>
+              <Card className="border-2 border-gray-600 bg-gray-800/30">
                 <CardContent className="p-6 text-center">
-                  <p className="text-gray-500">No pending requests</p>
+                  <p className="text-light-200/70">No pending requests</p>
                 </CardContent>
               </Card>
             ) : (
@@ -441,21 +460,23 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
           </div>
         </TabsContent>
 
-        <TabsContent value="history" className="mt-0">
+        <TabsContent value="history" className="mt-2">
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Complete Borrow History</h2>
+            <h2 className="text-xl font-semibold text-light-100">
+              Complete Borrow History
+            </h2>
             {borrowHistory.length === 0 ? (
-              <Card>
+              <Card className="border-2 border-gray-600 bg-gray-800/30">
                 <CardContent className="p-6 text-center">
-                  <p className="text-gray-500">No borrow history</p>
+                  <p className="text-light-200/70">No borrow history</p>
                 </CardContent>
               </Card>
             ) : (
               <>
                 {/* Statistics */}
-                <Card className="mb-4">
+                <Card className="mb-4 border-2 border-gray-600 bg-gray-800/30">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-lg text-light-100">
                       📊 Borrow Statistics
                     </CardTitle>
                   </CardHeader>
@@ -485,14 +506,14 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                         </p>
                         <p className="text-xs text-orange-700">Active</p>
                       </div>
-                      <div className="rounded-lg bg-green-50 p-2 text-center">
+                      <div className="rounded-lg bg-green-100 p-2 text-center">
                         <p className="text-xl font-bold text-green-600">
                           {
                             borrowHistory.filter((r) => r.status === "RETURNED")
                               .length
                           }
                         </p>
-                        <p className="text-xs text-green-700">Returned</p>
+                        <p className="text-xs text-green-700">Book Returned</p>
                       </div>
                     </div>
 

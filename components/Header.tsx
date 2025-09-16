@@ -31,16 +31,22 @@ const Header = async ({ session }: HeaderProps) => {
       </Link>
 
       <ul className="flex flex-row items-center gap-8 text-light-100">
-        <li>
+        {/* <li>
           <Link href="/">Home</Link>
-        </li>
-        <li>
+        </li> */}
+        <li className="hover:text-light-200">
           <Link href="/all-books">All Books</Link>
         </li>
-        <li>
+        <li className="hover:text-light-200">
           <Link href="/my-profile">My Profile</Link>
         </li>
-        <li>
+        <li className="hover:text-light-200">
+          <Link href="/api-docs">API Docs</Link>
+        </li>
+        <li className="hover:text-light-200">
+          <Link href="/api-status">API Status</Link>
+        </li>
+        <li className="hover:text-light-200">
           <Link href="/performance">Performance</Link>
         </li>
 
@@ -53,7 +59,7 @@ const Header = async ({ session }: HeaderProps) => {
           <li>
             <Link
               href="/make-admin"
-              className="text-purple-300 hover:text-purple-200"
+              className="text-light-100 hover:text-light-200"
             >
               Become Admin
             </Link>

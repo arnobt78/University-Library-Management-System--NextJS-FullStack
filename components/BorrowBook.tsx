@@ -75,7 +75,7 @@ const BorrowBook = ({
 
   return (
     <Button
-      className="mt-4 min-h-14 w-fit bg-primary text-dark-100 hover:bg-primary/90 max-md:w-full"
+      className="hover:bg-primary/90 mt-4 min-h-14 w-fit bg-primary text-dark-100 max-md:w-full"
       onClick={handleBorrowBook}
       disabled={borrowing}
     >

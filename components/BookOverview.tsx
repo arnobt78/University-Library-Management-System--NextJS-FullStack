@@ -4,6 +4,9 @@ import BookCover from "@/components/BookCover";
 import BorrowBook from "@/components/BorrowBook";
 import ReturnBookButton from "@/components/ReturnBookButton";
 import ReviewButton from "@/components/ReviewButton";
+import { Button } from "@/components/ui/button";
+import { BookOpen } from "lucide-react";
+import Link from "next/link";
 import { db } from "@/database/drizzle";
 import { users, borrowRecords } from "@/database/schema";
 import { eq, count, sql, and, or } from "drizzle-orm";
@@ -293,20 +296,17 @@ const BookOverview = async ({
             {isDetailPage && <ReviewButton bookId={id} userId={userId} />}
 
             {!isDetailPage && (
-              <a
-                href={`/books/${id}`}
-                className="flex items-center gap-2 rounded-lg bg-gray-600 px-6 py-3 text-white transition-colors hover:bg-gray-700"
+              <Button
+                asChild
+                className="hover:bg-primary/90 mt-4 min-h-14 w-fit bg-primary text-dark-100 max-md:w-full"
               >
-                <img
-                  src="/icons/book.svg"
-                  alt="book details"
-                  width={20}
-                  height={20}
-                />
-                <p className="font-bebas-neue text-xl text-dark-100">
-                  Book Details
-                </p>
-              </a>
+                <Link href={`/books/${id}`}>
+                  <BookOpen className="size-5 text-dark-100" />
+                  <p className="font-bebas-neue text-xl text-dark-100">
+                    Book Details
+                  </p>
+                </Link>
+              </Button>
             )}
           </div>
         )}

@@ -99,7 +99,7 @@ const BookCollection: React.FC<BookCollectionProps> = ({
       <div className="flex gap-6">
         {/* Filters Sidebar */}
         <div className="w-64 shrink-0 ">
-          <Card className="bg-gradient-to-br from-[#192034] to-[#1f2f46]">
+          <Card className="rounded-lg border border-gray-600 bg-gray-800/30">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg text-light-100">Filters</CardTitle>
             </CardHeader>

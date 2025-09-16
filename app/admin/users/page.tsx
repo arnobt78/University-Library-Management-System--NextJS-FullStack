@@ -3,6 +3,13 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getAllUsers } from "@/lib/admin/actions/user";
 import { updateUserRole, updateUserStatus } from "@/lib/admin/actions/user";
+import {
+  getPendingAdminRequests,
+  approveAdminRequest,
+  rejectAdminRequest,
+  removeAdminPrivileges,
+} from "@/lib/admin/actions/admin-requests";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 const Page = async ({
@@ -11,13 +18,25 @@ const Page = async ({
   searchParams: Promise<{ success?: string; error?: string }>;
 }) => {
   const params = await searchParams;
-  const result = await getAllUsers();
+  const session = await auth();
 
-  if (!result.success) {
-    return <div>Error loading users: {result.error}</div>;
+  if (!session?.user?.id) {
+    redirect("/sign-in");
   }
 
-  const users = result.data || [];
+  const [usersResult, adminRequestsResult] = await Promise.all([
+    getAllUsers(),
+    getPendingAdminRequests(),
+  ]);
+
+  if (!usersResult.success) {
+    return <div>Error loading users: {usersResult.error}</div>;
+  }
+
+  const users = usersResult.data || [];
+  const adminRequests = adminRequestsResult.success
+    ? adminRequestsResult.data || []
+    : [];
 
   return (
     <section className="w-full rounded-2xl bg-white p-7">
@@ -46,6 +65,12 @@ const Page = async ({
                   "✅ User Approved Successfully!"}
                 {params.success === "user-rejected" &&
                   "✅ User Rejected Successfully!"}
+                {params.success === "admin-approved" &&
+                  "✅ Admin Request Approved Successfully!"}
+                {params.success === "admin-rejected" &&
+                  "✅ Admin Request Rejected Successfully!"}
+                {params.success === "admin-removed" &&
+                  "✅ Admin Privileges Removed Successfully!"}
               </h3>
             </div>
           </div>
@@ -85,6 +110,85 @@ const Page = async ({
           </Link>
         </Button>
       </div>
+
+      {/* Admin Requests Section - Only shows PENDING requests */}
+      {adminRequests.length > 0 && (
+        <div className="mt-6">
+          <h3 className="mb-4 text-lg font-semibold">
+            Pending Admin Requests ({adminRequests.length})
+          </h3>
+          <div className="space-y-4">
+            {adminRequests.map((request) => (
+              <div
+                key={request.id}
+                className="rounded-lg border border-yellow-200 bg-yellow-50 p-4"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-medium text-yellow-900">
+                        {request.userFullName}
+                      </h4>
+                      <span className="text-sm text-yellow-700">
+                        ({request.userEmail})
+                      </span>
+                    </div>
+                    <p className="text-sm text-yellow-800 mb-2">
+                      <strong>Reason:</strong> {request.requestReason}
+                    </p>
+                    <p className="text-xs text-yellow-600">
+                      Requested on:{" "}
+                      {new Date(request.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <form
+                      action={async () => {
+                        "use server";
+                        const result = await approveAdminRequest(
+                          request.id,
+                          session.user?.id!
+                        );
+                        if (result.success) {
+                          redirect("/admin/users?success=admin-approved");
+                        } else {
+                          redirect("/admin/users?error=failed");
+                        }
+                      }}
+                    >
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Approve
+                      </Button>
+                    </form>
+                    <form
+                      action={async () => {
+                        "use server";
+                        const result = await rejectAdminRequest(
+                          request.id,
+                          session.user?.id!,
+                          "Rejected by admin"
+                        );
+                        if (result.success) {
+                          redirect("/admin/users?success=admin-rejected");
+                        } else {
+                          redirect("/admin/users?error=failed");
+                        }
+                      }}
+                    >
+                      <Button size="sm" className="bg-red-600 hover:bg-red-700">
+                        Decline
+                      </Button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-7 w-full overflow-hidden">
         <div className="overflow-x-auto">
@@ -157,6 +261,33 @@ const Page = async ({
                   </td>
                   <td className="border border-gray-200 px-4 py-2">
                     <div className="flex gap-2">
+                      {/* Show Remove Admin for existing admins (except current user) */}
+                      {user.role === "ADMIN" &&
+                        user.id !== session.user?.id && (
+                          <form
+                            action={async () => {
+                              "use server";
+                              const result = await removeAdminPrivileges(
+                                user.id,
+                                session.user?.id!
+                              );
+                              if (result.success) {
+                                redirect("/admin/users?success=admin-removed");
+                              } else {
+                                redirect("/admin/users?error=failed");
+                              }
+                            }}
+                          >
+                            <Button
+                              size="sm"
+                              className="bg-red-600 text-white hover:bg-red-700"
+                            >
+                              Remove Admin
+                            </Button>
+                          </form>
+                        )}
+
+                      {/* Show Make Admin for regular users */}
                       {user.role === "USER" && (
                         <form
                           action={async () => {
@@ -180,6 +311,8 @@ const Page = async ({
                           </Button>
                         </form>
                       )}
+
+                      {/* Show Approve/Reject for pending users */}
                       {user.status === "PENDING" && (
                         <>
                           <form

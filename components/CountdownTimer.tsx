@@ -101,7 +101,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     if (timeLeft.isOverdue) {
       return `Overdue: ${timeLeft.days}d ${timeLeft.hours}h ${timeLeft.minutes}m`;
     }
-    return `${timeLeft.days}d ${timeLeft.hours}h ${timeLeft.minutes}m`;
+    return `Remaining: ${timeLeft.days}d ${timeLeft.hours}h ${timeLeft.minutes}m`;
   };
 
   return (

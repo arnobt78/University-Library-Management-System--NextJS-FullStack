@@ -117,3 +117,18 @@ export const bookReviews = pgTable("book_reviews", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
+
+// Admin requests table for users requesting admin privileges
+export const adminRequests = pgTable("admin_requests", {
+  id: uuid("id").notNull().primaryKey().defaultRandom().unique(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  requestReason: text("request_reason").notNull(), // Why they want admin access
+  status: STATUS_ENUM("status").default("PENDING").notNull(), // PENDING, APPROVED, REJECTED
+  reviewedBy: uuid("reviewed_by").references(() => users.id), // Admin who reviewed the request
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  rejectionReason: text("rejection_reason"), // Reason for rejection if applicable
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
