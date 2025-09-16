@@ -550,7 +550,49 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                     <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
                       <div className="rounded-lg bg-red-50 p-2 text-center">
                         <p className="text-lg font-bold text-red-600">
-                          {borrowHistory.filter((r) => r.fineAmount > 0).length}
+                          {
+                            borrowHistory.filter((r) => {
+                              // Use same logic as individual cards for consistency
+                              const today = new Date();
+                              const todayUTC = new Date(
+                                today.getTime() +
+                                  today.getTimezoneOffset() * 60000
+                              );
+                              const dueDateUTC = r.dueDate
+                                ? new Date(r.dueDate)
+                                : null;
+
+                              const isOverdue =
+                                r.status === "BORROWED" &&
+                                dueDateUTC &&
+                                todayUTC > dueDateUTC;
+
+                              if (isOverdue && dueDateUTC) {
+                                const todayDateUTC = new Date(
+                                  Date.UTC(
+                                    todayUTC.getUTCFullYear(),
+                                    todayUTC.getUTCMonth(),
+                                    todayUTC.getUTCDate()
+                                  )
+                                );
+                                const dueDateOnlyUTC = new Date(
+                                  Date.UTC(
+                                    dueDateUTC.getUTCFullYear(),
+                                    dueDateUTC.getUTCMonth(),
+                                    dueDateUTC.getUTCDate()
+                                  )
+                                );
+                                const daysOverdue = Math.floor(
+                                  (todayDateUTC.getTime() -
+                                    dueDateOnlyUTC.getTime()) /
+                                    (1000 * 60 * 60 * 24)
+                                );
+                                return daysOverdue > 0;
+                              }
+
+                              return r.fineAmount > 0; // Use stored fine for returned books
+                            }).length
+                          }
                         </p>
                         <p className="text-xs text-red-700">With Fines</p>
                       </div>
@@ -558,7 +600,47 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
                         <p className="text-lg font-bold text-red-600">
                           $
                           {borrowHistory
-                            .reduce((sum, r) => sum + r.fineAmount, 0)
+                            .reduce((sum, r) => {
+                              // Calculate fine using same logic as individual cards
+                              const today = new Date();
+                              const todayUTC = new Date(
+                                today.getTime() +
+                                  today.getTimezoneOffset() * 60000
+                              );
+                              const dueDateUTC = r.dueDate
+                                ? new Date(r.dueDate)
+                                : null;
+
+                              const isOverdue =
+                                r.status === "BORROWED" &&
+                                dueDateUTC &&
+                                todayUTC > dueDateUTC;
+
+                              if (isOverdue && dueDateUTC) {
+                                const todayDateUTC = new Date(
+                                  Date.UTC(
+                                    todayUTC.getUTCFullYear(),
+                                    todayUTC.getUTCMonth(),
+                                    todayUTC.getUTCDate()
+                                  )
+                                );
+                                const dueDateOnlyUTC = new Date(
+                                  Date.UTC(
+                                    dueDateUTC.getUTCFullYear(),
+                                    dueDateUTC.getUTCMonth(),
+                                    dueDateUTC.getUTCDate()
+                                  )
+                                );
+                                const daysOverdue = Math.floor(
+                                  (todayDateUTC.getTime() -
+                                    dueDateOnlyUTC.getTime()) /
+                                    (1000 * 60 * 60 * 24)
+                                );
+                                return sum + daysOverdue * 1.0;
+                              }
+
+                              return sum + r.fineAmount; // Use stored fine for returned books
+                            }, 0)
                             .toFixed(2)}
                         </p>
                         <p className="text-xs text-red-700">Total Fines</p>
