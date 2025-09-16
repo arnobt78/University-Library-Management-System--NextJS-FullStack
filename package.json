@@ -62,7 +62,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
-    "drizzle-kit": "^0.18.1",
+    "drizzle-kit": "^0.31.4",
     "eslint": "^8.57.1",
     "eslint-config-next": "15.1.2",
     "eslint-config-prettier": "^9.1.0",

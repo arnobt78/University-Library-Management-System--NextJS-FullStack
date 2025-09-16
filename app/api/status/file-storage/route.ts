@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const startTime = Date.now();
 
     // Test file storage by checking if we can access the public directory
     // This simulates checking file storage availability
-    const testFile = "/api/status/file-storage";
-    const testUrl = new URL(testFile, request.url);
 
     // Simulate file storage check
     const storageTest = {

@@ -60,6 +60,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
         token.name = user.name;
+
+        // Update last_login timestamp when user signs in
+        try {
+          await db
+            .update(users)
+            .set({ lastLogin: new Date() })
+            .where(eq(users.id, user.id));
+        } catch (error) {
+          console.error("Failed to update last_login:", error);
+        }
       }
 
       return token;

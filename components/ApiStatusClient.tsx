@@ -20,19 +20,19 @@ import {
   Lock,
   Wifi,
   Globe,
+  HardDrive,
+  Users,
+  Shield,
 } from "lucide-react";
 import {
   fetchAllServicesHealth,
   ServiceStatus,
 } from "@/lib/services/health-monitor";
-
-interface SystemMetric {
-  title: string;
-  value: string;
-  status: "good" | "warning" | "critical";
-  icon: React.ReactNode;
-  description: string;
-}
+import {
+  fetchSystemMetrics,
+  SystemMetric,
+  MetricsData,
+} from "@/lib/services/metrics-monitor";
 
 interface ApiStatusClientProps {
   services: ServiceStatus[];
@@ -41,7 +41,7 @@ interface ApiStatusClientProps {
 
 const ApiStatusClient = ({
   services: initialServices,
-  systemMetrics,
+  systemMetrics: initialMetrics,
 }: ApiStatusClientProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
@@ -52,6 +52,8 @@ const ApiStatusClient = ({
   const [uptime, setUptime] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [healthScore, setHealthScore] = useState(100);
   const [services, setServices] = useState<ServiceStatus[]>(initialServices);
+  const [systemMetrics, setSystemMetrics] =
+    useState<SystemMetric[]>(initialMetrics);
 
   // Utility functions
   const getStatusColor = (status: string) => {
@@ -128,6 +130,64 @@ const ApiStatusClient = ({
     }
   };
 
+  // Convert metrics data to component format
+  const convertMetricsToSystemMetrics = (
+    metricsData: MetricsData
+  ): SystemMetric[] => {
+    return [
+      {
+        title: "Database Performance",
+        value: `Active: ${metricsData.databasePerformance.active}/${metricsData.databasePerformance.max}`,
+        status: metricsData.databasePerformance.status,
+        icon: <Database className="size-5" />,
+        description: metricsData.databasePerformance.description,
+        details: metricsData.databasePerformance,
+      },
+      {
+        title: "API Performance",
+        value: `${metricsData.apiPerformance.requestsPerMinute} req/min`,
+        status:
+          metricsData.apiPerformance.status === "HEALTHY" ? "good" : "critical",
+        icon: <TrendingUp className="size-5" />,
+        description: "Requests per minute",
+        details: metricsData.apiPerformance,
+      },
+      {
+        title: "Error Rate",
+        value: metricsData.errorRate.rate,
+        status: metricsData.errorRate.status,
+        icon: <AlertCircle className="size-5" />,
+        description: metricsData.errorRate.description,
+        details: metricsData.errorRate,
+      },
+      {
+        title: "Storage Usage",
+        value: `${metricsData.storageUsage.used} / ${metricsData.storageUsage.total}`,
+        status: metricsData.storageUsage.status,
+        icon: <HardDrive className="size-5" />,
+        description: metricsData.storageUsage.description,
+        details: metricsData.storageUsage,
+      },
+      {
+        title: "Active Users",
+        value: metricsData.activeUsers.count.toString(),
+        status: metricsData.activeUsers.status,
+        icon: <Users className="size-5" />,
+        description: metricsData.activeUsers.description,
+        details: metricsData.activeUsers,
+      },
+      {
+        title: "SSL Certificate",
+        value: metricsData.sslCertificate.status,
+        status:
+          metricsData.sslCertificate.status === "Valid" ? "good" : "critical",
+        icon: <Shield className="size-5" />,
+        description: "Security status",
+        details: metricsData.sslCertificate,
+      },
+    ];
+  };
+
   // Fetch real service data and initialize monitoring
   useEffect(() => {
     // Initialize the date on client side to avoid hydration mismatch
@@ -178,6 +238,19 @@ const ApiStatusClient = ({
 
     fetchServices();
 
+    // Fetch real system metrics
+    const fetchMetrics = async () => {
+      try {
+        const realMetrics = await fetchSystemMetrics();
+        const convertedMetrics = convertMetricsToSystemMetrics(realMetrics);
+        setSystemMetrics(convertedMetrics);
+      } catch (error) {
+        console.error("Failed to fetch system metrics:", error);
+      }
+    };
+
+    fetchMetrics();
+
     // Update uptime every second
     const uptimeInterval = setInterval(() => {
       setUptime((prev) => {
@@ -199,7 +272,10 @@ const ApiStatusClient = ({
     }, 1000);
 
     // Refresh service data every 30 seconds
-    const refreshInterval = setInterval(fetchServices, 30000);
+    const refreshInterval = setInterval(() => {
+      fetchServices();
+      fetchMetrics();
+    }, 30000);
 
     return () => {
       clearInterval(uptimeInterval);
@@ -247,6 +323,11 @@ const ApiStatusClient = ({
         servicesWithIcons.reduce((sum, s) => sum + s.performanceValue, 0) /
         totalServices;
       setHealthScore(Math.round(avgPerformance));
+
+      // Also refresh metrics
+      const realMetrics = await fetchSystemMetrics();
+      const convertedMetrics = convertMetricsToSystemMetrics(realMetrics);
+      setSystemMetrics(convertedMetrics);
     } catch (error) {
       console.error("Failed to refresh service health:", error);
     }
@@ -440,11 +521,11 @@ const ApiStatusClient = ({
       </Card>
 
       {/* Footer */}
-      <div className="mt-12 text-center">
-        <p className="text-sm text-gray-500">
+      <div className="my-4 text-center">
+        <p className="text-sm text-light-100">
           BookWise University Library Management System - API Status Monitor
         </p>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-light-100">
           Real-time monitoring • Last updated:{" "}
           {lastChecked ? lastChecked.toLocaleTimeString() : "Loading..."}
         </p>

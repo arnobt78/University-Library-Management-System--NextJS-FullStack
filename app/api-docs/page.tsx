@@ -354,7 +354,7 @@ const ApiDocsPage = async () => {
 
         <div className="py-8">
           <div className="min-h-screen bg-transparent py-0">
-            <div className="mx-auto max-w-6xl px-4">
+            <div className="mx-auto max-w-7xl px-4">
               {/* Return Button */}
               {/* <div className="mb-6">
                 <Link href="/">

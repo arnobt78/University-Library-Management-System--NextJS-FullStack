@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/database/drizzle";
 import { sql } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const startTime = Date.now();
 
@@ -42,7 +42,7 @@ async function testDatabaseConnection() {
 
   try {
     // Test database connection with a simple query
-    const result = await db.execute(sql`SELECT 1 as test`);
+    await db.execute(sql`SELECT 1 as test`);
     const responseTime = Date.now() - startTime;
 
     return {
