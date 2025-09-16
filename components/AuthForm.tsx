@@ -26,6 +26,7 @@ import { FIELD_NAMES, FIELD_TYPES } from "@/constants";
 import FileUpload from "@/components/FileUpload";
 import { showToast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
+import { CopyButton } from "@/components/CopyButton";
 
 interface Props<T extends FieldValues> {
   schema: ZodType<T>;
@@ -135,6 +136,32 @@ const AuthForm = <T extends FieldValues>({
           {isSignIn ? "Create an account" : "Sign in"}
         </Link>
       </p>
+
+      {/* Test Credentials Section - Only for Sign In */}
+      {isSignIn && (
+        <div className=" rounded-lg border border-gray-600 bg-gray-800/30 px-4 py-2">
+          <p className="mb-1 text-sm font-medium text-gray-300">
+            To test the admin panel, you can login with:
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-md bg-gray-700/50 px-3 py-2">
+              <span className="text-sm text-gray-200">test@admin.com</span>
+              <CopyButton
+                text="test@admin.com"
+                className="size-8 bg-gray-700/50"
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-md bg-gray-700/50 px-3 py-2">
+              <span className="text-sm text-gray-200">12345678</span>
+              <CopyButton text="12345678" className="size-8 bg-gray-700/50" />
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-gray-300">
+            ⚠️ Please try not to mess up the current books, users and the admin
+            panel setup!
+          </p>
+        </div>
+      )}
     </div>
   );
 };

@@ -138,6 +138,7 @@ export async function bulkApproveBorrowRequests(recordIds: string[]) {
   try {
     const sevenDaysFromNow = new Date();
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    sevenDaysFromNow.setHours(23, 59, 59, 999); // Set to end of day
 
     await db
       .update(borrowRecords)

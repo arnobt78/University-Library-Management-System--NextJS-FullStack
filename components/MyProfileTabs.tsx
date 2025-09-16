@@ -76,12 +76,16 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
   totalReviews,
 }) => {
   const router = useRouter();
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return "N/A";
-    return new Date(date).toLocaleDateString("en-US", {
+    // Handle timezone-aware timestamps correctly
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    // Use UTC methods to avoid timezone conversion issues
+    return dateObj.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
+      timeZone: "UTC", // Force UTC to match database storage
     });
   };
 
@@ -142,21 +146,47 @@ const MyProfileTabs: React.FC<MyProfileTabsProps> = ({
 
     // Calculate if book is overdue (only for BORROWED status with dueDate)
     const today = new Date();
+    // Use UTC dates for consistent comparison
+    const todayUTC = new Date(
+      today.getTime() + today.getTimezoneOffset() * 60000
+    );
+    const dueDateUTC = record.dueDate ? new Date(record.dueDate) : null;
+
     const isOverdue =
-      record.status === "BORROWED" &&
-      record.dueDate &&
-      today > new Date(record.dueDate);
-    const daysOverdue = isOverdue
-      ? Math.floor(
-          (today.getTime() - new Date(record.dueDate!).getTime()) /
-            (1000 * 60 * 60 * 24)
+      record.status === "BORROWED" && dueDateUTC && todayUTC > dueDateUTC;
+
+    // Calculate days overdue using date-level comparison (exactly like backend SQL)
+    // Backend: (${now}::date - ${borrowRecords.dueDate}::date)
+    // Use UTC dates to avoid timezone issues
+    const todayDateUTC = new Date(
+      Date.UTC(
+        todayUTC.getUTCFullYear(),
+        todayUTC.getUTCMonth(),
+        todayUTC.getUTCDate()
+      )
+    );
+    const dueDateOnlyUTC = dueDateUTC
+      ? new Date(
+          Date.UTC(
+            dueDateUTC.getUTCFullYear(),
+            dueDateUTC.getUTCMonth(),
+            dueDateUTC.getUTCDate()
+          )
         )
-      : 0;
-    const daysRemaining =
-      record.status === "BORROWED" && record.dueDate && !isOverdue
-        ? Math.ceil(
-            (new Date(record.dueDate).getTime() - today.getTime()) /
+      : null;
+
+    const daysOverdue =
+      isOverdue && dueDateOnlyUTC
+        ? Math.floor(
+            (todayDateUTC.getTime() - dueDateOnlyUTC.getTime()) /
               (1000 * 60 * 60 * 24)
+          )
+        : 0;
+
+    const daysRemaining =
+      record.status === "BORROWED" && dueDateUTC && !isOverdue
+        ? Math.ceil(
+            (dueDateUTC.getTime() - todayUTC.getTime()) / (1000 * 60 * 60 * 24)
           )
         : 0;
     const calculatedFine = isOverdue ? daysOverdue * 1.0 : 0;

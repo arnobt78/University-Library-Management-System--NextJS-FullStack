@@ -94,9 +94,10 @@ export const approveBorrowRequest = async (recordId: string) => {
       return { success: false, error: "Book is no longer available" };
     }
 
-    // Calculate due date (7 days from approval date)
+    // Calculate due date (7 days from approval date, set to end of day)
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 7);
+    dueDate.setHours(23, 59, 59, 999); // Set to end of day
     const dueDateString = dueDate.toISOString().split("T")[0];
 
     // Update borrow record status to BORROWED and set borrowedBy and dueDate

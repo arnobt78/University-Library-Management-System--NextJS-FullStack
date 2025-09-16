@@ -145,12 +145,18 @@ export class EmailService {
 // Reminder types
 export type ReminderType = "due_soon" | "overdue" | "return_reminder";
 
-// Get books that are due soon (within 2 days)
+// Get books that are due soon (within 2 days, including today)
 export async function getBooksDueSoon() {
   const twoDaysFromNow = new Date();
   twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
 
   const now = new Date();
+  // Set to start of today to include books due today
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
 
   const dueSoonBooks = await db
     .select({
@@ -161,7 +167,7 @@ export async function getBooksDueSoon() {
       userEmail: users.email,
       borrowDate: borrowRecords.borrowDate,
       dueDate: borrowRecords.dueDate,
-      daysUntilDue: sql<number>`(${borrowRecords.dueDate}::date - ${now}::date)`,
+      daysUntilDue: sql<number>`(${borrowRecords.dueDate}::date - ${startOfToday}::date)`,
     })
     .from(borrowRecords)
     .innerJoin(books, eq(borrowRecords.bookId, books.id))
@@ -170,7 +176,7 @@ export async function getBooksDueSoon() {
       and(
         eq(borrowRecords.status, "BORROWED"),
         sql`${borrowRecords.dueDate} IS NOT NULL`,
-        sql`${borrowRecords.dueDate} > ${now}`,
+        sql`${borrowRecords.dueDate} >= ${startOfToday}`,
         sql`${borrowRecords.dueDate} <= ${twoDaysFromNow}`
       )
     );
@@ -181,6 +187,12 @@ export async function getBooksDueSoon() {
 // Get overdue books
 export async function getOverdueBooks() {
   const now = new Date();
+  // Set to start of today to exclude books due today from overdue
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
 
   const overdueBooks = await db
     .select({
@@ -191,7 +203,7 @@ export async function getOverdueBooks() {
       userEmail: users.email,
       borrowDate: borrowRecords.borrowDate,
       dueDate: borrowRecords.dueDate,
-      daysOverdue: sql<number>`(${now}::date - ${borrowRecords.dueDate}::date)`,
+      daysOverdue: sql<number>`(${startOfToday}::date - ${borrowRecords.dueDate}::date)`,
       fineAmount: borrowRecords.fineAmount,
     })
     .from(borrowRecords)
@@ -201,7 +213,7 @@ export async function getOverdueBooks() {
       and(
         eq(borrowRecords.status, "BORROWED"),
         sql`${borrowRecords.dueDate} IS NOT NULL`,
-        sql`${borrowRecords.dueDate} < ${now}`
+        sql`${borrowRecords.dueDate} < ${startOfToday}`
       )
     );
 
@@ -254,6 +266,8 @@ This is an automated reminder. For assistance, please contact us at support@book
         subject,
         body
       );
+      // Update the lastReminderSent timestamp after successful email
+      await updateLastReminderSent(book.recordId);
       results.push({
         recordId: book.recordId,
         userEmail: book.userEmail,
@@ -325,6 +339,8 @@ This is an automated notice. For assistance, please contact us at support@bookwi
         subject,
         body
       );
+      // Update the lastReminderSent timestamp after successful email
+      await updateLastReminderSent(book.recordId);
       results.push({
         recordId: book.recordId,
         userEmail: book.userEmail,
@@ -363,6 +379,13 @@ export async function getReminderStats() {
   const twoDaysFromNow = new Date();
   twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
 
+  // Set to start of today to include books due today
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+
   const [dueSoonCount, overdueCount, remindersSentToday] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)` })
@@ -371,7 +394,7 @@ export async function getReminderStats() {
         and(
           eq(borrowRecords.status, "BORROWED"),
           sql`${borrowRecords.dueDate} IS NOT NULL`,
-          sql`${borrowRecords.dueDate} > ${now}`,
+          sql`${borrowRecords.dueDate} >= ${startOfToday}`,
           sql`${borrowRecords.dueDate} <= ${twoDaysFromNow}`
         )
       ),
@@ -382,7 +405,7 @@ export async function getReminderStats() {
         and(
           eq(borrowRecords.status, "BORROWED"),
           sql`${borrowRecords.dueDate} IS NOT NULL`,
-          sql`${borrowRecords.dueDate} < ${now}`
+          sql`${borrowRecords.dueDate} < ${startOfToday}`
         )
       ),
     db
